@@ -7,7 +7,7 @@
     }
   ],
   "env": {
-    "BOT_TOKEN": "8074820782:AAHtlGnCBDpi61oPecPmh6jO0Rg58qkHKcs"
+    "BOT_TOKEN": "8074820782:AAHtlGnCBDpi61oPecPmh6jO0Rg58qkHKcs",
     "MONGO_URI": "mongodb+srv://Akshayofficial:islandbot1904@tgbotproject.uwaxq.mongodb.net/?retryWrites=true&w=majority"
   },
   "routes": [
