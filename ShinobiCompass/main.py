@@ -35,6 +35,7 @@ def main() -> None:
     application.add_handler(CommandHanlder("resettask", resettask))
     application.add_handler(CommandHanlder("finv", fnv))
     application.add_handler(CommandHandler("linv", linv))
+    application.add_handler(CommandHanlder("connect", connect))
     application.add_Handler(CommandHandler("status", status))
     application.add_handler(CallbackQueryHandler(handle_callback_query))
     application.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.VIDEO, handle_message))
