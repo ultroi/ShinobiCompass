@@ -7,7 +7,7 @@
     }
   ],
   "env": {
-    "TELEGRAM_API_KEY": "8074820782:AAHtlGnCBDpi61oPecPmh6jO0Rg58qkHKcs"
+    "BOT_TOKEN": "8074820782:AAHtlGnCBDpi61oPecPmh6jO0Rg58qkHKcs"
   },
   "routes": [
     {
