@@ -1,4 +1,6 @@
 import logging
+from pymongo import MongoClient
+from modules.task import settask, schedule, resettask, finv, linv, connect, status
 from modules.start import start, handle_callback_query
 from modules.bm import bm, handle_message
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -17,6 +19,9 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
+# MongoDB setup
+client = MongoClient("mongodb+srv://Akshayofficial:islandbot1904@tgbotproject.uwaxq.mongodb.net/Tgbotproject?retryWrites=true&w=majority&ssl=true&ssl_cert_reqs=CERT_NONE")
+db = client.Tgbotproject
 
 # Main function
 def main() -> None:
@@ -26,6 +31,11 @@ def main() -> None:
     # Handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("bm", bm))
+    application.add_handler(CommandHanlder("settask", settask))
+    application.add_handler(CommandHanlder("resettask", resettask))
+    application.add_handler(CommandHanlder("finv", fnv))
+    application.add_handler(CommandHandler("linv", linv))
+    application.add_Handler(CommandHandler("status", status))
     application.add_handler(CallbackQueryHandler(handle_callback_query))
     application.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.VIDEO, handle_message))
 
