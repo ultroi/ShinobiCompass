@@ -1,4 +1,10 @@
-
+import logging
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    CallbackQueryHandler,
+    CallbackContext,
+    filters,
+)
 
 # Command: /start
 async def start(update: Update, _: CallbackContext) -> None:
