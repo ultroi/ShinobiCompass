@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from starlette.responses import JSONResponse
 
-from .modules.task import settask, schedule, resettask, finv, linv, connect, status
-from .modules.start import start, handle_callback_query
-from .modules.bm import bm, handle_message
+from ShinobiCompass.modules.task import settask, schedule, resettask, finv, linv, connect, status
+from ShinobiCompass.modules.start import start, handle_callback_query
+from ShinobiCompass.modules.bm import bm, handle_message
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
