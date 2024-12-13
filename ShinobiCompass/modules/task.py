@@ -4,7 +4,7 @@ from ShinobiCompass.modules.start import check_bot_rights
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, MessageEntity
 import telegram
 from telegram.ext import ContextTypes, CallbackQueryHandler
-from database import db
+from ShinobiCompass.database import db
 
 # Helper function to check if a user is an admin
 async def is_admin(update: Update) -> bool:
