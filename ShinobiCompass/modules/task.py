@@ -161,19 +161,23 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 # Dummy command for finv
 async def finv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("This is a dummy response for the finv command.")
+    await update.message.reply_text("This is command is under-construction 🚧.")
 
 # Dummy command for linv
 async def linv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("This is a dummy response for the linv command.")
+    await update.message.reply_text("This is command is under-construction 🚧.")
 
 # Dummy command for status
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("This is a dummy response for the status command.")
+    await update.message.reply_text("This is command is under-construction 🚧.")
 
 # Dummy command for schedule
 async def schedule(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("This is a dummy response for the schedule command.")
+    await update.message.reply_text("This is command is under-construction 🚧.")
 
 async def resettask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("This is a dummy response for the schedule command.")
+    await update.message.reply_text("This is command is under-construction 🚧.")
+
+async def connect(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text("This is command is under-construction 🚧.")
+    
