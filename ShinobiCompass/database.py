@@ -57,7 +57,7 @@ def setup_mongo(retries: int = 3, delay: int = 5):
             raise e
 
 def close_mongo_connection():
-    """Close MongoDB connection gracefully."""
+    """Close MongoDB connection Gracefully."""
     global mongo_client
     if mongo_client:
         try:
