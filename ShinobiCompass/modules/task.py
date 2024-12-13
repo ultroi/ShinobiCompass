@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from modules.start import check_bot_rights
+from ShinobiCompass.modules.start import check_bot_rights
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, MessageEntity
 import telegram
 from telegram.ext import ContextTypes, CallbackQueryHandler
