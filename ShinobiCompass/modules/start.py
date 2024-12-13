@@ -1,5 +1,5 @@
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatAdministratorRights
 from telegram.ext import (
     CallbackQueryHandler,
     CallbackContext,
@@ -64,3 +64,46 @@ async def handle_callback_query(update: Update, _: CallbackContext) -> None:
             "🌟 <b>Enjoy private, personalized black market analysis!</b>",
             parse_mode="HTML"
         )
+
+
+async def check_bot_rights(update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Checks if the bot has all necessary admin rights in a chat.
+
+    Args:
+        update: The Update object from PTB.
+        context: The ContextTypes object from PTB.
+
+    Returns:
+        A string message indicating the bot's rights status.
+    """
+    chat = update.effective_chat
+    bot = await chat.get_member(context.bot.id)
+
+    if not bot.is_chat_admin():
+        return await update.message.reply_text("The bot is not an admin in this chat.")
+
+    # Required rights
+    required_rights = ChatAdministratorRights(
+        can_manage_chat=True,
+        can_delete_messages=True,
+        can_restrict_members=True,
+        can_promote_members=True,
+        can_change_info=True,
+        can_manage_video_chats=True,
+        can_invite_users=True,
+        can_post_messages=getattr(chat, "is_forum", False),  # Forums require this right
+    )
+
+    missing_rights = [
+        right for right in vars(required_rights)
+        if getattr(required_rights, right) and not getattr(bot.privileges, right, False)
+    ]
+
+    if missing_rights:
+        missing_rights_list = ", ".join(missing_rights)
+        return await update.message.reply_text(
+            f"The bot is missing the following rights: {missing_rights_list}"
+        )
+
+    return await update.message.reply_text("The bot has all the required rights.")
