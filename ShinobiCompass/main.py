@@ -1,12 +1,9 @@
 import logging
-from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
+from pymongo import MongoClient
 from fastapi import FastAPI
 from starlette.responses import JSONResponse
-
-from ShinobiCompass.modules.start import start, handle_callback_query
-from ShinobiCompass.modules.bm import bm, handle_message
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -16,40 +13,42 @@ from telegram.ext import (
     filters,
 )
 
+# Importing your custom modules
+from ShinobiCompass.modules.start import start, handle_callback_query
+from ShinobiCompass.modules.bm import bm, handle_message
+
 # Load environment variables
 load_dotenv()
 
-# Configure logging
+# Logging configuration
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
+logger = logging.getLogger(__name__)
 
 # MongoDB setup
 MONGO_URI = os.getenv("MONGO_URI")
-client = MongoClient(MONGO_URI)
-db = client.get_database("Tgbotproject")
+try:
+    client = MongoClient(MONGO_URI)
+    db = client.get_database("Tgbotproject")
+    logger.info("Successfully connected to MongoDB")
+except Exception as e:
+    logger.error(f"Error connecting to MongoDB: {e}")
+    raise e
 
 # Initialize FastAPI app
 app = FastAPI()
 
 # Initialize the bot application globally
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise ValueError("BOT_TOKEN is not set in the environment variables")
 application = ApplicationBuilder().token(BOT_TOKEN).build()
 
 # Add handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("bm", bm))
-# application.add_handler(CommandHandler("settask", settask))
-# application.add_handler(CommandHandler("resettask", resettask))
-# application.add_handler(CommandHandler("finv", finv))
-# application.add_handler(CommandHandler("linv", linv))
-# application.add_handler(CommandHandler("connect", connect))
-# application.add_handler(CommandHandler("status", status))
-# application.add_handler(CommandHandler("schedule", schedule))
-# application.add_handler(CallbackQueryHandler(task_replacement_callback, pattern="replace_task|keep_task"))
-# application.add_handler(CallbackQueryHandler(button_handler, pattern="submit_task"))
-# application.add_handler(CallbackQueryHandler(handle_start, pattern="^connect:"))
 application.add_handler(CallbackQueryHandler(handle_callback_query))
 application.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.VIDEO, handle_message))
 
@@ -68,5 +67,11 @@ async def webhook(update: dict):
 
         return JSONResponse({"status": "ok"})
     except Exception as e:
-        logging.error(f"Error processing update: {e}")
+        logger.error(f"Error processing update: {e}")
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+
+# Root route (optional)
+@app.get("/")
+async def root():
+    return {"message": "Shinobi Compass Bot is Running!"}
