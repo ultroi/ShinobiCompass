@@ -5,11 +5,11 @@ commands:
     - "pip install -r requirements.txt"
 
   package:
-    - "nano main.py"
+    - "nano app.py"
     - "zip -r ShinobiCompass.zip ./"
 
   start:
-    - "python3 main.py"
+    - "python3 app.py"
 
 env:
   - "ENVIRONMENT=production"
