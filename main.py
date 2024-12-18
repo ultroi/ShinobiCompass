@@ -1,8 +1,8 @@
 import logging
 import os
 from dotenv import load_dotenv
-from pymongo import MongoClient
-from fastapi import FastAPI
+from pymongo import MongoClient, errors
+from fastapi import FastAPI, HTTPException
 from starlette.responses import JSONResponse
 from telegram import Update
 from telegram.ext import (
@@ -13,29 +13,40 @@ from telegram.ext import (
     filters,
 )
 
-# Importing your custom modules
+# Importing custom modules
 from ShinobiCompass.modules.start import start, handle_callback_query
 from ShinobiCompass.modules.bm import bm, handle_message
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from .env file
+try:
+    load_dotenv()
+except Exception as e:
+    raise RuntimeError(f"Error loading environment variables: {e}")
 
 # Logging configuration
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("ShinobiCompassBot")
 
 # MongoDB setup
 MONGO_URI = os.getenv("MONGO_URI")
+if not MONGO_URI:
+    raise ValueError("MONGO_URI is not set in the environment variables")
+
 try:
-    client = MongoClient(MONGO_URI)
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
     db = client.get_database("Tgbotproject")
+    # Verify connection
+    client.admin.command("ping")
     logger.info("Successfully connected to MongoDB")
+except errors.ServerSelectionTimeoutError as e:
+    logger.error(f"MongoDB connection timeout: {e}")
+    raise RuntimeError("Failed to connect to MongoDB. Please check your MONGO_URI.")
 except Exception as e:
     logger.error(f"Error connecting to MongoDB: {e}")
-    raise e
+    raise RuntimeError("Unexpected error connecting to MongoDB.")
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -44,6 +55,7 @@ app = FastAPI()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN is not set in the environment variables")
+
 application = ApplicationBuilder().token(BOT_TOKEN).build()
 
 # Add handlers
@@ -68,10 +80,26 @@ async def webhook(update: dict):
         return JSONResponse({"status": "ok"})
     except Exception as e:
         logger.error(f"Error processing update: {e}")
-        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+        raise HTTPException(status_code=500, detail={"status": "error", "message": str(e)})
 
 
 # Root route (optional)
 @app.get("/")
 async def root():
+    """
+    Root route for checking if the bot is running.
+    """
     return {"message": "Shinobi Compass Bot is Running!"}
+
+
+# Graceful shutdown
+@app.on_event("shutdown")
+async def shutdown():
+    """
+    Ensure clean disconnection from MongoDB.
+    """
+    try:
+        client.close()
+        logger.info("MongoDB connection closed")
+    except Exception as e:
+        logger.warning(f"Error while closing MongoDB connection: {e}")
