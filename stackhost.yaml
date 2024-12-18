@@ -5,9 +5,7 @@ commands:
     - "pip install -r requirements.txt"
 
   package:
-    - "nano .env"
     - "nano ShinobiCompass/main.py"
-    - "cp .env ShinobiCompass/"
     - "zip -r ShinobiCompass.zip ShinobiCompass/"
 
   start:
@@ -15,4 +13,5 @@ commands:
 
 env:
   - "ENVIRONMENT=production"
-  - "DATABASE_URL=mongodb+srv://Akshayofficial:islandbot1904@tgbotproject.uwaxq.mongodb.net/?retryWrites=true&w=majority"
+  - "MONGO_URI=mongodb+srv://Akshayofficial:islandbot1904@tgbotproject.uwaxq.mongodb.net/?retryWrites=true&w=majority"
+  - "BOT_TOKEN=8074820782:AAHtlGnCBDpi61oPecPmh6jO0Rg58qkHKcs"
