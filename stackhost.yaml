@@ -3,11 +3,7 @@ language: python
 commands:
   build:
     - "pip install -r requirements.txt"
-
-  package:
-    - "nano app.py"
-    - "zip -r ShinobiCompass.zip ./"
-
+    
   start:
     - "python3 app.py"
 
