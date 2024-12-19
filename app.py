@@ -46,15 +46,15 @@ db = client.get_database("Tgbotproject")
 # FastAPI setup
 app = FastAPI()
 
-# Lifespan event handler
-@app.on_event("startup")
-async def startup():
+# Lifespan context manager (handles startup and shutdown)
+async def lifespan(app: FastAPI):
     logger.info("Application startup complete.")
-
-@app.on_event("shutdown")
-async def shutdown():
+    yield
     client.close()
     logger.info("MongoDB connection closed")
+
+# Set lifespan event handler
+app = FastAPI(lifespan=lifespan)
 
 # Telegram bot setup
 BOT_TOKEN = os.getenv("BOT_TOKEN")
