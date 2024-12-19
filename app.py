@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.lifespan import LifespanMiddleware
 from starlette.responses import JSONResponse
 from telegram import Update
 from telegram.ext import (
@@ -32,10 +33,23 @@ MONGO_URI = os.getenv("MONGO_URI")
 if not MONGO_URI:
     raise ValueError("MONGO_URI is not set")
 client = MongoClient(MONGO_URI)
+
+try:
+    client.admin.command('ping')
+    logger.info("Connected to MongoDB successfully!")
+except Exception as e:
+    logger.error(f"Failed to connect to MongoDB: {e}")
+    raise
+
 db = client.get_database("Tgbotproject")
 
 # FastAPI setup
+async def shutdown_handler():
+    client.close()
+    logger.info("MongoDB connection closed")
+
 app = FastAPI()
+app.add_middleware(LifespanMiddleware, on_shutdown=shutdown_handler)
 
 # Telegram bot setup
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -64,9 +78,3 @@ async def webhook(update: dict):
 @app.get("/")
 async def root():
     return {"message": "Shinobi Compass Bot is Running!"}
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    client.close()
-    logger.info("MongoDB connection closed")
