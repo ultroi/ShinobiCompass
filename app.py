@@ -46,8 +46,13 @@ db = client.get_database("Tgbotproject")
 # FastAPI setup
 app = FastAPI()
 
+# Lifespan event handler
+@app.on_event("startup")
+async def startup():
+    logger.info("Application startup complete.")
+
 @app.on_event("shutdown")
-async def shutdown_handler():
+async def shutdown():
     client.close()
     logger.info("MongoDB connection closed")
 
@@ -81,5 +86,5 @@ async def root():
 
 # Run the application
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
+    port = int(os.getenv("PORT", 8000))  # Use dynamic port from environment
     uvicorn.run(app, host="0.0.0.0", port=port)
