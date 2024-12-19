@@ -3,7 +3,6 @@ import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.lifespan import LifespanMiddleware
 from starlette.responses import JSONResponse
 from telegram import Update
 from telegram.ext import (
@@ -13,6 +12,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     filters,
 )
+import uvicorn  # For running the FastAPI server dynamically
 
 # Import custom modules
 from ShinobiCompass.modules.start import start, handle_callback_query
@@ -44,12 +44,12 @@ except Exception as e:
 db = client.get_database("Tgbotproject")
 
 # FastAPI setup
+app = FastAPI()
+
+@app.on_event("shutdown")
 async def shutdown_handler():
     client.close()
     logger.info("MongoDB connection closed")
-
-app = FastAPI()
-app.add_middleware(LifespanMiddleware, on_shutdown=shutdown_handler)
 
 # Telegram bot setup
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -74,7 +74,12 @@ async def webhook(update: dict):
         logger.error(f"Error processing update: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
+# Root endpoint
 @app.get("/")
 async def root():
     return {"message": "Shinobi Compass Bot is Running!"}
+
+# Run the application
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
