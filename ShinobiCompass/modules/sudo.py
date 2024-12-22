@@ -73,7 +73,7 @@ async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sudo_users_message = "<b>List of Sudo Users:</b>\n"
     
     # Loop through the cursor asynchronously
-    async for user in sudo_users_cursor:
+    for user in sudo_users_cursor:
         user_id = user['user_id']
         try:
             user_info = await context.bot.get_chat(user_id)  # Get user details from Telegram
