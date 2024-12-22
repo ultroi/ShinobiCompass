@@ -1,7 +1,7 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
 from ShinobiCompass.database import db  # Assuming db is already initialized to work with MongoDB
-from ShinobiCompass.sudo import is_owner_or_sudo
+from ShinobiCompass.modules.sudo import is_owner_or_sudo
 
 # Command to show stats: Total users and total groups with buttons
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
