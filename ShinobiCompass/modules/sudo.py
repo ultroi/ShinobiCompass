@@ -9,18 +9,14 @@ SUDO_USERS_COLLECTION = "sudo_users"  # MongoDB collection for sudo users
 async def is_owner(update: Update) -> bool:
     return update.message.from_user.id == OWNER_ID  # Owner ID from variable
 
+# Helper function to check if the user is the owner or sudo
 async def is_owner_or_sudo(update: Update) -> bool:
     user_id = update.message.from_user.id
-    owner_id = 5956598856  # Define owner ID
-
-    # Fetch sudo users as an async cursor
-    sudo_users_cursor = db.sudo_users.find()
-
-    # Loop through the cursor asynchronously
-    async for sudo_user in sudo_users_cursor:
-        if sudo_user['user_id'] == user_id or user_id == owner_id:
+    owner_id = 5956598856  # Define this as a constant or fetch from a config
+    sudo_users = db.sudo_users.find()
+    for user in sudo_users:
+        if user['user_id'] == user_id or user_id == owner_id:
             return True
-
     return False
 
 # Command to add a sudo user
