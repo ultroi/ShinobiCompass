@@ -45,7 +45,7 @@ async def start(update: Update, context: CallbackContext) -> None:
             return
 
         # Check the bot's privileges
-        if not bot.privileges.can_manage_chat or not bot.privileges.can_delete_messages:
+        if not bot.can_manage_chat or not bot.can_delete_messages:
             # If any of the required permissions are missing
             await update.message.reply_text(
                 "⚠️ The bot is missing some required admin rights in this group."
