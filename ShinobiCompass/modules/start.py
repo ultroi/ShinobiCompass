@@ -1,5 +1,5 @@
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatAdministratorRights
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     CallbackQueryHandler,
     CallbackContext,
@@ -15,7 +15,7 @@ async def start(update: Update, context: CallbackContext) -> None:
         # For private chats, show the "Add Me to Group" button
         buttons = [
             [
-                InlineKeyboardButton("➕ Add Me to Group", url="https://t.me/HelpClanOT_bot?startgroup=true"),
+                InlineKeyboardButton("➕ Add Me to Group", url="https://t.me/ShinobiCompassBot?startgroup=true"),
             ],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
@@ -37,30 +37,19 @@ async def start(update: Update, context: CallbackContext) -> None:
         chat = update.message.chat
         bot = await chat.get_member(context.bot.id)  # Use context.bot.id instead of update.message.bot.id
 
-        if not bot.is_chat_admin():
-            # If bot is not an admin, notify the user in the group
+        if bot.status != 'administrator':
+            # If the bot is not an admin, notify the user in the group
             await update.message.reply_text(
                 "⚠️ The bot needs to be an admin in this group to function properly. Please make sure it has the required permissions."
             )
             return
 
-        # Required rights for the bot to function properly in a group
-        required_rights = ChatAdministratorRights(
-            can_manage_chat=True,
-            can_delete_messages=True,
-            can_restrict_members=True,
-            can_promote_members=True,
-            can_change_info=True,
-            can_manage_video_chats=True,
-            can_invite_users=True,
-            can_post_messages=True,
-        )
-
+        # Check the bot's privileges
         if not bot.privileges.can_manage_chat or not bot.privileges.can_delete_messages:
             # If any of the required permissions are missing
             await update.message.reply_text(
-                "⚠️ The bot is missing some required admin rights in this group. It needs the following permissions: "
-                "Manage Chat, Delete Messages. Please update the permissions."
+                "⚠️ The bot is missing some required admin rights in this group."
+                " Please update the permissions."
             )
             return
 
@@ -94,9 +83,10 @@ async def handle_callback_query(update: Update, _: CallbackContext) -> None:
     if query.data == "group_scenario":
         await query.edit_message_text(
             "📍 <b>Using the Bot in Groups:</b>\n\n"
-            "1️⃣ Add me to your group.\n"
-            "2️⃣ I will monitor messages and automatically analyze any black market listings.\n"
-            "3️⃣ Use <b>/bm</b> on a replied message for manual analysis.\n\n"
+            "1️⃣ Add me to your group using the <b>Add Me to Group</b> button.\n"
+            "2️⃣ Ensure I have message-reading permissions.\n"
+            "3️⃣ I will monitor messages and automatically analyze any black market listings.\n"
+            "4️⃣ Use <b>/bm</b> on a replied message for manual analysis.\n\n"
             "🌟 <b>Start finding profitable deals with ease in your groups!</b>",
             parse_mode="HTML"
         )
