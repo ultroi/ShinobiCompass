@@ -47,33 +47,31 @@ async def removesudo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     except (IndexError, ValueError):
         await update.message.reply_text("<b>⚠ Please provide a valid user ID.</b>", parse_mode="HTML")
 
-# Command to list all sudo users with their first name and user ID using HTML
-async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # Check if the user is the owner
-    if not await is_owner(update):
-        await update.message.reply_text("<b>⚠ You must be the owner to use this command.</b>", parse_mode="HTML")
-        return
-    
-    # Fetch all sudo users from the database
-    sudo_users_cursor = db.sudo_users.find()
-    
-    # Count the documents directly on the collection, not the cursor
-    if db.sudo_users.count_documents({}) == 0:  # Use count_documents on the collection
-        await update.message.reply_text("<b>⚠ There are no sudo users.</b>", parse_mode="HTML")
+
+# Assuming this is in your `sudolist` function where you fetch the sudo users from the database
+async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Check if the user is authorized
+    if not await is_owner_or_sudo(update):
+        await update.message.reply_text("<b>⚠ You must be the owner or a sudo user to use this command.</b>", parse_mode="HTML")
         return
 
-    # Prepare the user list with tagged user names
-    user_list = "<b>List of Sudo Users:</b>\n"
-    async for user in sudo_users_cursor:  # Loop through the cursor asynchronously
+    sudo_users_cursor = db.sudo_users.find()
+
+    # Convert the Cursor to a list asynchronously
+    sudo_users_list = await sudo_users_cursor.to_list(None)
+
+    if not sudo_users_list:
+        await update.message.reply_text("<b>⚠ No sudo users found.</b>", parse_mode="HTML")
+        return
+
+    sudo_users_message = "<b>List of Sudo Users:</b>\n"
+    for user in sudo_users_list:  # Now using a regular for loop
         user_id = user['user_id']
         try:
-            # Fetch user details using their user_id
-            user_info = await context.bot.get_chat(user_id)  # Fetch user details from Telegram
-            user_name = user_info.first_name  # Get the user's first name
-            user_list += f"<b>{user_name}</b> - <a href='tg://user?id={user_id}'>@{user_name}</a> ({user_id})\n"
-        except Exception as e:
-            # If there is an issue fetching the user's details, display user ID with error
-            user_list += f"<b>User ID:</b> {user_id} (Could not fetch details)\n"
+            user_info = await context.bot.get_chat(user_id)  # Get user details from Telegram
+            user_name = user_info.first_name
+            sudo_users_message += f"<b>{user_name}</b> - <a href='tg://user?id={user_id}'>User Link</a> ({user_id})\n"
+        except Exception:
+            sudo_users_message += f"<b>User ID:</b> {user_id} (Could not fetch details)\n"
 
-    # Send the list of sudo users with embedded links
-    await update.message.reply_text(user_list, parse_mode="HTML")
+    await update.message.reply_text(sudo_users_message, parse_mode="HTML")
