@@ -13,8 +13,10 @@ async def is_owner(update: Update) -> bool:
 async def is_owner_or_sudo(update: Update) -> bool:
     user_id = update.message.from_user.id
     owner_id = 5956598856  # Define this as a constant or fetch from a config
-    sudo_users = db.sudo_users.find()
-    for user in sudo_users:
+    sudo_users_cursor = db.sudo_users.find()
+
+    # Loop through the cursor asynchronously
+    async for user in sudo_users_cursor:
         if user['user_id'] == user_id or user_id == owner_id:
             return True
     return False
@@ -67,21 +69,20 @@ async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     sudo_users_cursor = db.sudo_users.find()
 
-    # Convert the Cursor to a list asynchronously
-    sudo_users_list = await sudo_users_cursor.to_list(None)
-
-    if not sudo_users_list:
-        await update.message.reply_text("<b>⚠ No sudo users found.</b>", parse_mode="HTML")
-        return
-
+    # Prepare the message to list sudo users
     sudo_users_message = "<b>List of Sudo Users:</b>\n"
-    for user in sudo_users_list:  # Now using a regular for loop
+    
+    # Loop through the cursor asynchronously
+    async for user in sudo_users_cursor:
         user_id = user['user_id']
         try:
             user_info = await context.bot.get_chat(user_id)  # Get user details from Telegram
             user_name = user_info.first_name
             sudo_users_message += f"<b>{user_name}</b> - <a href='tg://user?id={user_id}'>User Link</a> ({user_id})\n"
-        except Exception:
-            sudo_users_message += f"<b>User ID:</b> {user_id} (Could not fetch details)\n"
+        except Exception as e:
+            sudo_users_message += f"<b>User ID:</b> {user_id} (Could not fetch details - {str(e)})\n"
+
+    if sudo_users_message == "<b>List of Sudo Users:</b>\n":
+        sudo_users_message = "<b>⚠ No sudo users found.</b>"
 
     await update.message.reply_text(sudo_users_message, parse_mode="HTML")
