@@ -13,6 +13,7 @@ from telegram.ext import (
 # Import custom modules
 from ShinobiCompass.modules.start import start, handle_callback_query
 from ShinobiCompass.modules.bm import bm, handle_message
+from ShinobiCompass.modules.sudo import addsudo, removesudo, sudolist
 
 # Logging setup
 logging.basicConfig(
@@ -45,6 +46,9 @@ application = ApplicationBuilder().token(BOT_TOKEN).build()
 # Add handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("bm", bm))
+application.add_handler(CommandHandler("addsudo", addsudo))
+application.add_handler(CommandHandler("rmsudo", removesudo))
+application.add_handler(CommandHandler("sdlist", sudolist))
 application.add_handler(CallbackQueryHandler(handle_callback_query))
 application.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.VIDEO, handle_message))
 
