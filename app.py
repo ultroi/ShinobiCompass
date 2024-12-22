@@ -1,6 +1,5 @@
 import logging
 import os
-from dotenv import load_dotenv
 from pymongo import MongoClient
 from telegram import Update
 from telegram.ext import (
@@ -14,9 +13,6 @@ from telegram.ext import (
 # Import custom modules
 from ShinobiCompass.modules.start import start, handle_callback_query
 from ShinobiCompass.modules.bm import bm, handle_message
-
-# Load environment variables
-load_dotenv()
 
 # Logging setup
 logging.basicConfig(
