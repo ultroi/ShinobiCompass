@@ -57,7 +57,7 @@ async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Fetch all sudo users from the database (using the collection variable)
     sudo_users = db[SUDO_USERS_COLLECTION].find()
     
-    if sudo_users.count() == 0:
+    if sudo_users.count_documents({}) == 0:
         await update.message.reply_text("<b>⚠ There are no sudo users.</b>", parse_mode="HTML")
         return
 
