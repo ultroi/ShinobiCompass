@@ -1,16 +1,7 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes, CommandHandler, CallbackQueryHandler
 from ShinobiCompass.database import db  # Assuming db is already initialized to work with MongoDB
-
-# Helper function to check if the user is the owner or sudo
-async def is_owner_or_sudo(update: Update) -> bool:
-    user_id = update.message.from_user.id
-    owner_id = 5956598856  # Define this as a constant or fetch from a config
-    sudo_users = db.sudo_users.find()
-    for user in sudo_users:
-        if user['user_id'] == user_id or user_id == owner_id:
-            return True
-    return False
+from ShinobiCompass.sudo import is_owner_or_sudo
 
 # Command to show stats: Total users and total groups with buttons
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
