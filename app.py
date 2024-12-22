@@ -14,6 +14,7 @@ from telegram.ext import (
 from ShinobiCompass.modules.start import start, handle_callback_query
 from ShinobiCompass.modules.bm import bm, handle_message
 from ShinobiCompass.modules.sudo import addsudo, removesudo, sudolist
+from ShinobiCompass.modules.stats import stats, handle_stats_buttons
 
 # Logging setup
 logging.basicConfig(
@@ -51,6 +52,10 @@ application.add_handler(CommandHandler("rmsudo", removesudo))
 application.add_handler(CommandHandler("sdlist", sudolist))
 application.add_handler(CallbackQueryHandler(handle_callback_query))
 application.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.VIDEO, handle_message))
+application.add_handler(CommandHandler("stats", stats))
+
+# Add the handler for handling button interactions
+application.add_handler(CallbackQueryHandler(handle_stats_buttons))
 
 # Run the bot
 if __name__ == "__main__":
