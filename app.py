@@ -49,13 +49,11 @@ application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("bm", bm))
 application.add_handler(CommandHandler("addsudo", addsudo))
 application.add_handler(CommandHandler("rmsudo", removesudo))
-application.add_handler(CommandHandler("sdlist", sudolist))
+application.add_handler(CommandHandler("sdlist", sudolist))application.add_handler(CommandHandler("stats", stats))
+application.add_handler(CallbackQueryHandler(handle_stats_buttons))
 application.add_handler(CallbackQueryHandler(handle_callback_query))
 application.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.VIDEO, handle_message))
-application.add_handler(CommandHandler("stats", stats))
 
-# Add the handler for handling button interactions
-application.add_handler(CallbackQueryHandler(handle_stats_buttons))
 
 # Run the bot
 if __name__ == "__main__":
