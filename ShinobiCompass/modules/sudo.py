@@ -54,16 +54,17 @@ async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("<b>⚠ You must be the owner to use this command.</b>", parse_mode="HTML")
         return
     
-    # Fetch all sudo users from the database (using the collection variable)
+    # Fetch all sudo users from the database
     sudo_users_cursor = db.sudo_users.find()
     
-    if sudo_users.count_documents({}) == 0:
+    # Count the documents directly on the collection, not the cursor
+    if db.sudo_users.count_documents({}) == 0:  # Use count_documents on the collection
         await update.message.reply_text("<b>⚠ There are no sudo users.</b>", parse_mode="HTML")
         return
 
     # Prepare the user list with tagged user names
     user_list = "<b>List of Sudo Users:</b>\n"
-    async for user in sudo_users:
+    async for user in sudo_users_cursor:  # Loop through the cursor asynchronously
         user_id = user['user_id']
         try:
             # Fetch user details using their user_id
