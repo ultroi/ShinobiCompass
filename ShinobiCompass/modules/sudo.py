@@ -2,6 +2,7 @@ from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler
 from ShinobiCompass.database import db  # Assuming db is already initialized to work with MongoDB
 
+OWNER_ID = 5956598856  
 SUDO_USERS_COLLECTION = "sudo_users"  # MongoDB collection for sudo users
 
 # Helper function to check if the user is the owner
