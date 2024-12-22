@@ -8,7 +8,7 @@ from telegram.ext import (
 )
 
 # Command: /start
-async def start(update: Update, _: CallbackContext) -> None:
+async def start(update: Update, context: CallbackContext) -> None:
     username = update.message.from_user.username or "User"
 
     if update.message.chat.type == 'private':
@@ -31,14 +31,11 @@ async def start(update: Update, _: CallbackContext) -> None:
             "🗂 <b>Commands:</b>\n"
             "1️⃣ <b>/start</b> - Introduces the bot and guides you to get started.\n"
             "2️⃣ <b>/bm</b> - Manually analyze a black market message by replying to it.\n\n"
-            "🌐 <b>How It Works:</b>\n"
-            "Click the button below to add the bot to your group and automate black market analysis.\n\n"
-            "👇 <b>Use the button below:</b>"
         )
     else:
         # Check if the bot is an admin and has required rights in the group
         chat = update.message.chat
-        bot = await chat.get_member(update.message.bot.id)
+        bot = await chat.get_member(context.bot.id)  # Use context.bot.id instead of update.message.bot.id
 
         if not bot.is_chat_admin():
             # If bot is not an admin, notify the user in the group
@@ -81,8 +78,6 @@ async def start(update: Update, _: CallbackContext) -> None:
             "🗂 <b>Commands:</b>\n"
             "1️⃣ <b>/start</b> - Introduces the bot and guides you to get started.\n"
             "2️⃣ <b>/bm</b> - Manually analyze a black market message by replying to it.\n\n"
-            "🌐 <b>How It Works:</b>\n"
-            "The bot will automatically analyze black market messages in your group. You can also use <b>/bm</b> on a specific message for manual analysis."
         )
 
     await update.message.reply_text(
