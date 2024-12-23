@@ -1,183 +1,357 @@
-import logging
+import pytz
 from datetime import datetime
-from ShinobiCompass.modules.start import check_bot_rights
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, MessageEntity
+from telegram import Update
 import telegram
-from telegram.ext import ContextTypes, CallbackQueryHandler
-from ShinobiCompass.database import db
+import asyncio
+from telegram.ext import CallbackContext
+from database import db
 
-# Helper function to check if a user is an admin
-async def is_admin(update: Update) -> bool:
-    if update.message.chat.type == "private":
-        return True  # Allow private chat commands for now
-    chat_admins = await update.message.chat.get_administrators()
-    user_id = update.message.from_user.id
-    return any(admin.user.id == user_id for admin in chat_admins)
+# Assuming tasks_collection is a collection in your database
+tasks_collection = db['tasks_collection']
+BOT_ID = "5416991774"
 
-# Command to set the task time and reward rule
-async def settask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_id = update.message.from_user.id
+# Timezone setup
+IST = pytz.timezone('Asia/Kolkata')
 
-    # Check if the user is an admin
-    if not await is_admin(update):
-        await update.message.reply_text("\u2757 You must be an admin to use this command.")
-        return
+async def is_admin(update: Update, context: CallbackContext) -> bool:
+    user_id = update.effective_user.id
+    chat_id = update.effective_chat.id
+    member = await context.bot.get_chat_member(chat_id, user_id)
+    return member.status in ['administrator', 'creator']
 
-    if db.tasks.find_one({"active_task": True}):
-        await update.message.reply_text(
-            "\u2757 An active task already exists.",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Replace Task", callback_data="replace_task")],
-                [InlineKeyboardButton("Keep Current Task", callback_data="keep_task")]
-            ])
-        )
+async def set_task(update: Update, context: CallbackContext) -> None:
+    if not await is_admin(update, context):
+        await update.message.reply_text("Only admins can create tasks.")
         return
 
     try:
-        start_time, end_time = context.args[0], context.args[1]
-        reward_rule = ' '.join(context.args[2:])
+        args = context.args
+        if len(args) < 3:
+            raise ValueError("Insufficient arguments")
 
-        start_datetime = datetime.strptime(start_time, '%I:%M%p')
-        end_datetime = datetime.strptime(end_time, '%I:%M%p')
+        # Parse command arguments
+        time_range, description, reward = args[0], ' '.join(args[1:-1]), args[-1]
+        start_time_str, end_time_str = time_range.split('-')
+        now_ist = datetime.now(IST)
 
-        current_time = datetime.now()
-        if end_datetime <= start_datetime or start_datetime <= current_time:
-            await update.message.reply_text("\u2757 Start time must be after the current time, and end time must be after the start time.")
+        # Add the current date to the parsed times
+        current_date = now_ist.date()
+        start_time = IST.localize(datetime.combine(
+            current_date,
+            datetime.strptime(start_time_str, '%I:%M%p').time()
+        ))
+        end_time = IST.localize(datetime.combine(
+            current_date,
+            datetime.strptime(end_time_str, '%I:%M%p').time()
+        ))
+
+        # Debugging logs
+        print(f"now_ist: {now_ist}, start_time: {start_time}, end_time: {end_time}")
+
+        # Ensure times are on the current day
+        if start_time.date() != now_ist.date() or end_time.date() != now_ist.date():
+            await update.message.reply_text("Start time and end time must be on the current day.")
             return
 
-        group_id = context.args[3]  # Assuming group_id is passed as the fourth argument
-        task_message = (
-            f"\U0001F3AF <b>Today\'s Task</b>\n"
-            f"<b>Time:</b> {start_time} - {end_time}\n"
-            f"<b>Description:</b> {reward_rule}\n\n"
-            f"<i>Submit your task by clicking the button below and forwarding your inventory in PM.</i>"
+        # Ensure times are in the future
+        if start_time <= now_ist or end_time <= now_ist:
+            await update.message.reply_text("Start time and end time must be in the future.")
+            return
+
+        # Ensure end time is later than start time
+        if end_time <= start_time:
+            await update.message.reply_text("End time must be later than start time.")
+            return
+
+        chat_id = update.effective_chat.id
+
+        # Unpin the previous task if any
+        existing_task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$gt": now_ist}})
+        if existing_task:
+            try:
+                await context.bot.unpin_chat_message(chat_id, existing_task['message_id'])
+            except telegram.error.BadRequest as e:
+                print(f"Error while unpinning: {e}")
+
+        # Proceed to save the task
+        existing_task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$gt": now_ist}})
+        if existing_task:
+            await update.message.reply_text("There is already an ongoing task in this group.")
+            return
+
+        # Save task to the database
+        task = {
+            "chat_id": chat_id,
+            "start_time": start_time,
+            "end_time": end_time,
+            "description": description,
+            "reward": reward,
+            "created_at": now_ist,
+            "verified_users": []
+        }
+        result = tasks_collection.insert_one(task)
+        task_id = result.inserted_id
+
+        # Send task details and pin the message
+        if start_time > now_ist:
+            if start_time > now_ist:
+                message = await update.message.reply_html(
+                    f"📝 <b>Today’s Task!</b>\n\n"
+                    f"<b>Task Time:</b> <i>{start_time_str} - {end_time_str}</i>\n\n"
+                    f"<b>Description:</b> <i>{description}</i>\n"
+                    f"<b>Reward:</b> <i>{reward}</i>\n\n"
+                    f"Your Task will begin soon."
+                )
+            else:
+                message = await update.message.reply_html(
+                    f"📝 <b>Today’s Task!</b>\n\n"
+                    f"<b>Task Time:</b> <i>{start_time_str} - {end_time_str}</i>\n\n"
+                    f"<b>Description:</b> <i>{description}</i>\n"
+                    f"<b>Reward:</b> <i>{reward}</i>\n\n"
+                    f"To submit your participation, use /finv to submit the starting inventory and /linv to submit the last inventory."
+                )
+        tasks_collection.update_one({"_id": task_id}, {"$set": {"message_id": message.message_id}})
+        await context.bot.pin_chat_message(chat_id, message.message_id)
+
+    except (IndexError, ValueError) as e:
+        print(f"Error: {e}")
+        await update.message.reply_text(
+            "Usage: /task starttime-endtime description reward\n"
+            "Example: /task 9:40pm-10:00pm Do 100 glory (19)"
         )
 
-        # Add a "Submit Task" button
-        task_buttons = InlineKeyboardMarkup([
-            [InlineKeyboardButton("Submit Task", callback_data="submit_task")]
-        ])
+async def end_task(update: Update, context: CallbackContext) -> None:
+    if not await is_admin(update, context):
+        await update.message.reply_text("Only admins can end tasks.")
+        return
 
-        sent_message = await context.bot.send_message(
-            chat_id=group_id,
-            text=task_message,
-            reply_markup=task_buttons,
+    chat_id = update.effective_chat.id
+    task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$gt": datetime.now(IST)}})
+    if not task:
+        await update.message.reply_text("No active task to end.")
+        return
+
+    # Show leaderboard
+    leaderboard = []
+    for key, value in task.items():
+        if key.startswith("finv_"):
+            user_id = int(key.split("_")[1])
+            finv = value
+            linv = task.get(f"linv_{user_id}")
+            if linv is not None:
+                leaderboard.append((user_id, linv - finv))
+
+    leaderboard.sort(key=lambda x: x[1], reverse=True)
+
+    leaderboard_text = "🏆 <b>Task Leaderboard</b> 🏆\n\n"
+    for user_id, glory_diff in leaderboard:
+        user = await context.bot.get_chat_member(chat_id, user_id)
+        leaderboard_text += f"👤 {user.user.first_name} (ID: {user_id}) - {glory_diff} Glory\n"
+
+    # Tag admins
+    admins = await context.bot.get_chat_administrators(chat_id)
+    admin_mentions = ' '.join([f"@{admin.user.username}" for admin in admins if admin.user.username])
+    leaderboard_text += f"\n\nAdmins: {admin_mentions}"
+
+    # Edit the task message to indicate that it has ended and show the leaderboard
+    await context.bot.edit_message_text(
+        chat_id=chat_id,
+        message_id=task['message_id'],
+        text=leaderboard_text,
+        parse_mode=telegram.constants.ParseMode.HTML,
+    )
+
+    # Schedule task to delete task data and unpin message after 12 hours
+    async def delete_task_data():
+        await asyncio.sleep(12 * 60 * 60)  # 12 hours
+        tasks_collection.delete_one({"_id": task['_id']})
+        try:
+            await context.bot.unpin_chat_message(chat_id, task['message_id'])
+        except telegram.error.BadRequest as e:
+            print(f"Error while unpinning: {e}")
+
+    asyncio.create_task(delete_task_data())
+
+async def clear_tasks(update: Update, context: CallbackContext) -> None:
+    if not await is_admin(update, context):
+        await update.message.reply_text("Only admins can clear tasks.")
+        return
+
+    chat_id = update.effective_chat.id
+    tasks_collection.delete_many({"chat_id": chat_id})
+    await update.message.reply_text("All tasks have been cleared.")
+    await context.bot.unpin_all_chat_messages(chat_id)
+
+async def submit_inventory(update: Update, context: CallbackContext, inventory_type: str) -> None:
+    context = context  # To avoid unused variable warning
+    if not update.message.reply_to_message:
+        await update.message.reply_text("Please reply to the inventory message.")
+        return
+
+    inventory_message = update.message.reply_to_message.text
+    user_id = update.effective_user.id
+    chat_id = update.effective_chat.id
+    now_ist = datetime.now(IST)
+
+    # Find an active task for the current chat
+    task = tasks_collection.find_one({"chat_id": chat_id, "start_time": {"$lt": now_ist}, "end_time": {"$gt": now_ist}})
+    if not task:
+        # Check if there is a pinned task that hasn't started yet
+        upcoming_task = tasks_collection.find_one({"chat_id": chat_id, "start_time": {"$gt": now_ist}})
+        if upcoming_task:
+            upcoming_start_time = IST.localize(upcoming_task['start_time'])
+            time_remaining = str(upcoming_start_time - now_ist).split(".")[0]
+            await update.message.reply_text(f"No active task. The next task starts in {time_remaining}.")
+            return
+        else:
+            await update.message.reply_text("No active task to submit inventory for.")
+        return
+
+    # Check if the inventory message is recent (within 1 minute)
+    if (now_ist - update.message.reply_to_message.date).total_seconds() > 60:
+        await update.message.reply_text("The inventory message must be recent (within 1 minute).")
+        return
+
+    # Verify the message is from the authorized bot (by sender ID)
+    if update.message.reply_to_message.from_user.id != 5416991774:
+        await update.message.reply_text("The inventory message must be from the authorized bot.")
+        return
+
+    # Extract user ID and My Glory
+    import re
+    id_match = re.search(r"ID:\s*(\d+)", inventory_message)
+    if not id_match or int(id_match.group(1)) != user_id:
+        await update.message.reply_text("The inventory message user ID does not match your Telegram ID.")
+        return
+
+    glory_match = re.search(r"My Glory:\s*(\d+)", inventory_message)
+    if not glory_match:
+        await update.message.reply_text("Invalid inventory message format. Ensure it contains 'My Glory:' followed by a number.")
+        return
+    my_glory = int(glory_match.group(1))
+
+    # Submit starting or ending inventory
+    if inventory_type == "finv":
+        if f"finv_{user_id}" in task:
+            await update.message.reply_text("Starting inventory has already been submitted.")
+            return
+        tasks_collection.update_one(
+            {"_id": task['_id']},
+            {"$set": {f"finv_{user_id}": my_glory}}
+        )
+        await update.message.reply_text("Starting inventory submitted successfully.")
+    elif inventory_type == "linv":
+        if f"linv_{user_id}" in task:
+            await update.message.reply_text("Ending inventory has already been submitted.")
+            return
+        if f"finv_{user_id}" not in task:
+            await update.message.reply_text("You must submit the starting inventory first.")
+            return
+        tasks_collection.update_one(
+            {"_id": task['_id']},
+            {"$set": {f"linv_{user_id}": my_glory}}
+        )
+        await update.message.reply_text("Ending inventory submitted successfully.")
+    else:
+        await update.message.reply_text("Invalid inventory type. Use 'finv' for starting or 'linv' for ending inventory.")
+
+async def show_leaderboard(update: Update, context: CallbackContext) -> None:
+    chat_id = update.effective_chat.id
+    task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$lt": datetime.now(IST)}})
+    if not task:
+        await update.message.reply_text("No completed task to show leaderboard for.")
+        return
+
+    leaderboard = []
+    for key, value in task.items():
+        if key.startswith("finv_"):
+            user_id = int(key.split("_")[1])
+            finv = value
+            linv = task.get(f"linv_{user_id}")
+            if linv is not None:
+                leaderboard.append((user_id, linv - finv))
+
+    leaderboard.sort(key=lambda x: x[1], reverse=True)
+
+    leaderboard_text = "🏆 <b>Task Leaderboard</b> 🏆\n\n"
+    for user_id, glory_diff in leaderboard:
+        user = await context.bot.get_chat_member(chat_id, user_id)
+        leaderboard_text += f"👤 {user.user.first_name} (ID: {user_id}) - {glory_diff} Glory\n"
+
+    # Unpin the task message
+    try:
+        await context.bot.unpin_chat_message(chat_id, task['message_id'])
+    except telegram.error.BadRequest as e:
+        print(f"Error while unpinning: {e}")
+
+    # Send and pin the leaderboard message
+    message = await update.message.reply_html(leaderboard_text)
+    await context.bot.pin_chat_message(chat_id, message.message_id)
+
+async def convert_to_leaderboard(task_id, end_time, now_ist, chat_id, context):
+    # Wait until the task ends
+    await asyncio.sleep((end_time - now_ist).total_seconds())
+    task = tasks_collection.find_one({"_id": task_id})
+    if task:
+        leaderboard = []
+        for key, value in task.items():
+            if key.startswith("finv_"):
+                user_id = int(key.split("_")[1])
+                finv = value
+                linv = task.get(f"linv_{user_id}")
+                if linv is not None:
+                    leaderboard.append((user_id, linv - finv))
+
+        leaderboard.sort(key=lambda x: x[1], reverse=True)
+
+        leaderboard_text = "🏆 <b>Task Leaderboard</b> 🏆\n\n"
+        for user_id, glory_diff in leaderboard:
+            user = await context.bot.get_chat_member(chat_id, user_id)
+            leaderboard_text += f"👤 {user.user.first_name} (ID: {user_id}) - {glory_diff} Glory\n"
+
+        # Tag admins
+        admins = await context.bot.get_chat_administrators(chat_id)
+        admin_mentions = ' '.join([f"@{admin.user.username}" for admin in admins if admin.user.username])
+        leaderboard_text += f"\n\nAdmins: {admin_mentions}"
+
+        # Edit the task message to indicate that it has ended and show the leaderboard
+        await context.bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=task['message_id'],
+            text=leaderboard_text,
             parse_mode=telegram.constants.ParseMode.HTML
         )
 
-        db.tasks.insert_one({
-            'active_task': True,
-            'start_time': start_time,
-            'end_time': end_time,
-            'reward_rule': reward_rule,
-            'start_datetime': start_datetime,
-            'end_datetime': end_datetime,
-            'pinned_message_id': sent_message.message_id,
-            'group_id': group_id
-        })
+        # Pin the leaderboard message
+        await context.bot.pin_chat_message(chat_id, task['message_id'])
 
-        try:
-            await context.bot.pin_chat_message(chat_id=group_id, message_id=sent_message.message_id)
-        except telegram.error.BadRequest as e:
-            await update.message.reply_text(f"\u2757 Failed to pin task message in group {group_id}: {e}")
-
-        await update.message.reply_text(f"\U0001F3AF Task Set! Start: {start_time} - End: {end_time} with reward: {reward_rule}.")
-    except (IndexError, ValueError):
-        await update.message.reply_text("\u2757 Invalid input. Please use the correct format: /settask [start_time] [end_time] [reward_rule] [group_id].")
-
-# Function to handle task completion
-async def check_and_complete_task(context: ContextTypes.DEFAULT_TYPE) -> None:
-    current_time = datetime.now()
-    active_task = db.tasks.find_one({"active_task": True})
-
-    if active_task and current_time >= active_task['end_datetime']:
-        group_id = active_task['group_id']
-        pinned_message_id = active_task.get('pinned_message_id')
-
-        # Unpin the task message
-        if pinned_message_id:
-            try:
-                await context.bot.unpin_chat_message(chat_id=group_id, message_id=pinned_message_id)
-            except telegram.error.BadRequest as e:
-                logging.error(f"Failed to unpin task message in group {group_id}: {e}")
-
-        # Notify admins with collected data
-        collected_data = "\n".join(["Sample data: finv/linv collected here"])  # Replace with actual data retrieval logic
-        chat_admins = await context.bot.get_chat_administrators(chat_id=group_id)
-        for admin in chat_admins:
-            try:
-                await context.bot.send_message(chat_id=admin.user.id, text=f"\U0001F4DD Task completed. Collected data:\n{collected_data}")
-            except Exception as e:
-                logging.error(f"Failed to send collected data to admin {admin.user.id}: {e}")
-
-        # Mark task as completed
-        db.tasks.update_one({"_id": active_task["_id"]}, {"$set": {"active_task": False}})
-
-# Callback handler for task replacement options
-async def task_replacement_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-    await query.answer()
-
-    if query.data == "replace_task":
-        active_task = db.tasks.find_one({"active_task": True})
-        if active_task:
-            group_id = active_task['group_id']
-            pinned_message_id = active_task.get('pinned_message_id')
-
-            # Unpin the current task message
-            if pinned_message_id:
-                try:
-                    await context.bot.unpin_chat_message(chat_id=group_id, message_id=pinned_message_id)
-                except telegram.error.BadRequest as e:
-                    logging.error(f"Failed to unpin task message in group {group_id}: {e}")
-
-        db.tasks.delete_many({})
-        await query.edit_message_text("\U0001F501 Previous task replaced. You can now set a new task.")
-    elif query.data == "keep_task":
-        await query.edit_message_text("\U0001F4DD Keeping the current task.")
-
-# Handle task submissions
-async def handle_task_submission(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-    user_id = query.from_user.id
-    active_task = db.tasks.find_one({"active_task": True})
-
-    if not active_task:
-        await query.answer("No active task to submit.", show_alert=True)
+async def cancel_task(update: Update, context: CallbackContext) -> None:
+    if not await is_admin(update, context):
+        await update.message.reply_text("Only admins can cancel tasks.")
         return
 
-    await query.answer()
-    await context.bot.send_message(
-        chat_id=user_id,
-        text="\U0001F4E6 Please forward your inventory here to complete the task."
+    chat_id = update.effective_chat.id
+    now_ist = datetime.now(IST)
+    task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$gt": now_ist}})
+    if not task:
+        await update.message.reply_text("No active task to cancel.")
+        return
+
+    # Edit the task message to indicate that it has been canceled
+    await context.bot.edit_message_text(
+        chat_id=chat_id,
+        message_id=task['message_id'],
+        text="❌ <b>Task Has Been Canceled</b>\n\nThe task has been canceled by an admin.",
+        parse_mode=telegram.constants.ParseMode.HTML,
     )
 
-# Add callback handler for "Submit Task" button
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
+    # Delete the task from the database
+    tasks_collection.delete_one({"_id": task['_id']})
 
-    if query.data == "submit_task":
-        await handle_task_submission(update, context)
+    # Unpin the task message
+    try:
+        await context.bot.unpin_chat_message(chat_id, task['message_id'])
+    except telegram.error.BadRequest as e:
+        print(f"Error while unpinning: {e}")
 
-# Dummy command for finv
-async def finv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("This is command is under-construction 🚧.")
-
-# Dummy command for linv
-async def linv(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("This is command is under-construction 🚧.")
-
-# Dummy command for status
-async def status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("This is command is under-construction 🚧.")
-
-# Dummy command for schedule
-async def schedule(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("This is command is under-construction 🚧.")
-
-async def resettask(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("This is command is under-construction 🚧.")
-
-async def connect(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("This is command is under-construction 🚧.")
-    
+    await update.message.reply_text("The task has been canceled successfully.")
