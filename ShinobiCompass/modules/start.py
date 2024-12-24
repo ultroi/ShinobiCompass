@@ -2,34 +2,52 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 from ShinobiCompass.database import db
 
+# Helper function to check if the user is the owner or sudo user
+async def is_owner_or_sudo(update: Update) -> bool:
+    user_id = update.effective_user.id
+    
+    # Check if the user is the owner
+    if user_id == OWNER_ID:
+        return True
+    
+    # Check if the user is a sudo user by querying MongoDB
+    sudo_user = await db[SUDO_USERS_COLLECTION].find_one({"user_id": user_id})
+    if sudo_user:
+        return True
+    
+    return False
+
 # Command for sudo users/owners to update the message
 async def update_message(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
-    if user.id in SUDO_IDS:  # Access SUDO_IDS directly
-        if context.args:  # Check if arguments are provided
-            new_message = " ".join(context.args)
-        elif update.message.reply_to_message:  # Check if the command is used as a reply
-            new_message = update.message.reply_to_message.text
-        else:
-            await update.message.reply_text("⚠️ Please provide an update message or reply to a message.")
-            return
-
-        if new_message:
-            db.update_one({"_id": "update_message"}, {"$set": {"message": new_message}}, upsert=True)
-            await update.message.reply_text(f"✅ Update message set to:\n\n<b>{new_message}</b>", parse_mode="HTML")
-        else:
-            await update.message.reply_text("⚠️ The replied message is empty.")
-    else:
+    if not await is_owner_or_sudo(update):  # Check if the user is authorized
         await update.message.reply_text("❌ You are not authorized to use this command.")
+        return
+
+    if context.args:  # Check if arguments are provided
+        new_message = " ".join(context.args)
+    elif update.message.reply_to_message:  # Check if the command is used as a reply
+        new_message = update.message.reply_to_message.text
+    else:
+        await update.message.reply_text("⚠️ Please provide an update message or reply to a message.")
+        return
+
+    if new_message:
+        db.update_one({"_id": "update_message"}, {"$set": {"message": new_message}}, upsert=True)
+        await update.message.reply_text(f"✅ Update message set to:\n\n<b>{new_message}</b>", parse_mode="HTML")
+    else:
+        await update.message.reply_text("⚠️ The replied message is empty.")
 
 # Command to clear the update message
 async def empty_update(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
-    if user.id in SUDO_IDS:  # Access SUDO_IDS directly
-        db.update_one({"_id": "update_message"}, {"$set": {"message": None}}, upsert=True)
-        await update.message.reply_text("✅ Update message cleared.")
-    else:
+    if not await is_owner_or_sudo(update):  # Check if the user is authorized
         await update.message.reply_text("❌ You are not authorized to use this command.")
+        return
+
+    db.update_one({"_id": "update_message"}, {"$set": {"message": None}}, upsert=True)
+    await update.message.reply_text("✅ Update message cleared.")
+
 
 UPDATE_MESSAGE = None
 
