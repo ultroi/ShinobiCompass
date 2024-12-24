@@ -31,6 +31,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ShinobiCompassBot")
 
+# Load environment variables
+OWNER_ID = int(os.getenv("OWNER_ID"))  # Default to 0 if not set
+SUDO_IDS = list(map(int, os.getenv("SUDO_IDS").split()))
+
 # MongoDB setup
 MONGO_URI = os.getenv("MONGO_URI")
 if not MONGO_URI:
