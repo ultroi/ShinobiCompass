@@ -67,20 +67,21 @@ async def removesudo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 # Command to list all sudo users
+# Command to list all sudo users
 async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Check if the user is authorized (owner or sudo user)
     if not await is_owner_or_sudo(update):
         await update.message.reply_text("<b>⚠ You must be the owner or a sudo user to use this command.</b>", parse_mode="HTML")
         return
 
-    # Fetch all sudo users as a list
-    sudo_users_list = await db[SUDO_USERS_COLLECTION].find().to_list(length=None)
+    # Fetch all sudo users from the collection
+    sudo_users_cursor = db[SUDO_USERS_COLLECTION].find()
 
     # Prepare the message to list sudo users
     sudo_users_message = "<b>List of Sudo Users:</b>\n"
 
-    # Iterate over the sudo users list
-    for user in sudo_users_list:
+    # Loop through the cursor synchronously
+    for user in sudo_users_cursor:
         user_id = user['user_id']
         try:
             user_info = await context.bot.get_chat(user_id)  # Get user details from Telegram
@@ -94,4 +95,3 @@ async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         sudo_users_message = "<b>⚠ No sudo users found.</b>"
 
     await update.message.reply_text(sudo_users_message, parse_mode="HTML")
-
