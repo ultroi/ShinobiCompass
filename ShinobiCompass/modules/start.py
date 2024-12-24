@@ -3,9 +3,9 @@ from telegram.ext import CallbackContext
 from ShinobiCompass.database import db
 
 # Command for sudo users/owners to update the message
-async def update_message(update: Update, context: CallbackContext, OWNER_SUDO: list) -> None:
+async def update_message(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
-    if user.id in OWNER_SUDO:
+    if user.id in SUDO_IDS:  # Access SUDO_IDS directly
         if context.args:  # Check if arguments are provided
             new_message = " ".join(context.args)
         elif update.message.reply_to_message:  # Check if the command is used as a reply
@@ -23,9 +23,9 @@ async def update_message(update: Update, context: CallbackContext, OWNER_SUDO: l
         await update.message.reply_text("❌ You are not authorized to use this command.")
 
 # Command to clear the update message
-async def empty_update(update: Update, context: CallbackContext, OWNER_SUDO: list) -> None:
+async def empty_update(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
-    if user.id in OWNER_SUDO:
+    if user.id in SUDO_IDS:  # Access SUDO_IDS directly
         db.update_one({"_id": "update_message"}, {"$set": {"message": None}}, upsert=True)
         await update.message.reply_text("✅ Update message cleared.")
     else:
