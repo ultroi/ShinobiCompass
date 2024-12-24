@@ -5,7 +5,9 @@ import os
 
 # Helper function to check if the user is the owner
 async def is_owner(update: Update) -> bool:
-    return update.message.from_user.id == OWNER_ID  # Owner ID from environment variable
+    if update.message and update.message.from_user:
+        return update.message.from_user.id == OWNER_ID  # Compare with OWNER_ID
+    return False  # Return False if update.message is None or from_user is None
 
 # Helper function to check if the user is the owner or a sudo user
 async def is_owner_or_sudo(update: Update) -> bool:
