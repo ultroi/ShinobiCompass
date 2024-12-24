@@ -1,6 +1,6 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
-from ShinobiCompass.modules.database import db
+from ShinobiCompass.database import db
 
 # Command for sudo users/owners to update the message
 async def update_message(update: Update, context: CallbackContext, OWNER_SUDO: list) -> None:
