@@ -73,13 +73,14 @@ async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("<b>⚠ You must be the owner or a sudo user to use this command.</b>", parse_mode="HTML")
         return
 
-    sudo_users_cursor = db[SUDO_USERS_COLLECTION].find()
+    # Fetch all sudo users as a list
+    sudo_users_list = await db[SUDO_USERS_COLLECTION].find().to_list(length=None)
 
     # Prepare the message to list sudo users
     sudo_users_message = "<b>List of Sudo Users:</b>\n"
-    
-    # Loop through the cursor asynchronously
-    async for user in sudo_users_cursor:
+
+    # Iterate over the sudo users list
+    for user in sudo_users_list:
         user_id = user['user_id']
         try:
             user_info = await context.bot.get_chat(user_id)  # Get user details from Telegram
@@ -88,7 +89,9 @@ async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         except Exception as e:
             sudo_users_message += f"<b>User ID:</b> {user_id} (Could not fetch details - {str(e)})\n"
 
+    # Handle the case when no sudo users are found
     if sudo_users_message == "<b>List of Sudo Users:</b>\n":
         sudo_users_message = "<b>⚠ No sudo users found.</b>"
 
     await update.message.reply_text(sudo_users_message, parse_mode="HTML")
+
