@@ -1,24 +1,25 @@
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler
 from ShinobiCompass.database import db  # Assuming db is already initialized to work with MongoDB
-
-OWNER_ID = 5956598856  
-SUDO_USERS_COLLECTION = "sudo_users"  # MongoDB collection for sudo users
+import os
 
 # Helper function to check if the user is the owner
 async def is_owner(update: Update) -> bool:
-    return update.message.from_user.id == OWNER_ID  # Owner ID from variable
+    return update.message.from_user.id == OWNER_ID  # Owner ID from environment variable
 
-# Helper function to check if the user is the owner or sudo
+# Helper function to check if the user is the owner or a sudo user
 async def is_owner_or_sudo(update: Update) -> bool:
     user_id = update.message.from_user.id
-    owner_id = 5956598856  # Define this as a constant or fetch from a config
-    sudo_users_cursor = db.sudo_users.find()
+    
+    # Check if the user is the owner
+    if user_id == OWNER_ID:
+        return True
 
-    # Loop through the cursor asynchronously
-    async for user in sudo_users_cursor:
-        if user['user_id'] == user_id or user_id == owner_id:
-            return True
+    # Check if the user is a sudo user by querying MongoDB
+    sudo_user = await db[SUDO_USERS_COLLECTION].find_one({"user_id": user_id})
+    if sudo_user:
+        return True
+    
     return False
 
 # Command to add a sudo user
@@ -32,7 +33,7 @@ async def addsudo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user_info = await context.bot.get_chat(user_id)  # Get user details from Telegram
         user_name = user_info.first_name
 
-        # Add user to the sudo users collection
+        # Add user to the sudo users collection in MongoDB
         db[SUDO_USERS_COLLECTION].update_one(
             {"user_id": user_id},
             {"$set": {"user_id": user_id, "first_name": user_name}},
@@ -60,20 +61,20 @@ async def removesudo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await update.message.reply_text("<b>⚠ Please provide a valid user ID.</b>", parse_mode="HTML")
 
 
-# Assuming this is in your `sudolist` function where you fetch the sudo users from the database
-async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Check if the user is authorized
+# Command to list all sudo users
+async def sudolist(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Check if the user is authorized (owner or sudo user)
     if not await is_owner_or_sudo(update):
         await update.message.reply_text("<b>⚠ You must be the owner or a sudo user to use this command.</b>", parse_mode="HTML")
         return
 
-    sudo_users_cursor = db.sudo_users.find()
+    sudo_users_cursor = db[SUDO_USERS_COLLECTION].find()
 
     # Prepare the message to list sudo users
     sudo_users_message = "<b>List of Sudo Users:</b>\n"
     
     # Loop through the cursor asynchronously
-    for user in sudo_users_cursor:
+    async for user in sudo_users_cursor:
         user_id = user['user_id']
         try:
             user_info = await context.bot.get_chat(user_id)  # Get user details from Telegram
