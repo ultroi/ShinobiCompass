@@ -4,6 +4,7 @@ from ShinobiCompass.database import db  # Assuming db is already initialized to 
 import os
 
 OWNER_ID = 5956598856
+SUDO_USERS_COLLECTION = "sudo_users"
 
 # Helper function to check if the user is the owner
 async def is_owner(update: Update) -> bool:
