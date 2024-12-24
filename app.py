@@ -31,9 +31,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ShinobiCompassBot")
 
-# Load environment variables
-OWNER_ID = int(os.getenv("OWNER_ID"))  # Default to 0 if not set
-SUDO_IDS = list(map(int, os.getenv("SUDO_IDS").split()))
+# Load environment variables 
+OWNER_ID = int(os.getenv("OWNER_ID"))
+SUDO_USERS_COLLECTION = "sudo_users"  # MongoDB collection for sudo users
 
 # MongoDB setup
 MONGO_URI = os.getenv("MONGO_URI")
