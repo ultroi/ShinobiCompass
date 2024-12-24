@@ -7,7 +7,6 @@ from telegram.ext import CallbackContext
 from ShinobiCompass.database import db
 import re
 import uuid
-from modules.decorate import authorize
 
 # Assuming tasks_collection is a collection in your database
 tasks_collection = db['tasks_collection']
