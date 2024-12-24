@@ -31,6 +31,8 @@ async def empty_update(update: Update, context: CallbackContext, OWNER_SUDO: lis
     else:
         await update.message.reply_text("❌ You are not authorized to use this command.")
 
+UPDATE_MESSAGE = None
+
 # Start command
 async def start(update: Update, context: CallbackContext) -> None:
     global UPDATE_MESSAGE
