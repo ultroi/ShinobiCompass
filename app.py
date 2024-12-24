@@ -10,8 +10,8 @@ from telegram.ext import (
     filters,
 )
 
-# Import custom modules
-from ShinobiCompass.modules.start import start, handle_callback_query
+# Import custom 
+from ShinobiCompass.modules.start import start, help_callback_handler, empty_update, show_updates_callback, update_message
 from ShinobiCompass.modules.bm import bm, handle_message
 from ShinobiCompass.modules.sudo import addsudo, removesudo, sudolist
 from ShinobiCompass.modules.stats import stats, handle_stats_buttons
@@ -54,6 +54,12 @@ application = ApplicationBuilder().token(BOT_TOKEN).build()
 
 # Add handlers
 application.add_handler(CommandHandler("start", start))
+application.add_handler(CommandHandler("update", update_message))  # Update message command
+application.add_handler(CommandHandler("empty_update", empty_update))
+application.add_handler(CallbackQueryHandler(help_callback_handler, pattern="help_bm_commands"))
+application.add_handler(CallbackQueryHandler(help_callback_handler, pattern="help_task_page_1"))
+application.add_handler(CallbackQueryHandler(help_callback_handler, pattern="help_task_page_2"))
+application.add_handler(CallbackQueryHandler(show_updates_callback, pattern="show_updates"))
 
 # Task handlers
 application.add_handler(CommandHandler("task", set_task))
@@ -71,7 +77,6 @@ application.add_handler(CommandHandler("rmsudo", removesudo))
 application.add_handler(CommandHandler("sdlist", sudolist))
 application.add_handler(CommandHandler("stats", stats))
 application.add_handler(CallbackQueryHandler(handle_stats_buttons))
-application.add_handler(CallbackQueryHandler(handle_callback_query))
 application.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.VIDEO, handle_message))
 
 
