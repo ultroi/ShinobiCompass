@@ -15,7 +15,7 @@ from ShinobiCompass.modules.start import start, handle_callback_query
 from ShinobiCompass.modules.bm import bm, handle_message
 from ShinobiCompass.modules.sudo import addsudo, removesudo, sudolist
 from ShinobiCompass.modules.stats import stats, handle_stats_buttons
-from modules.task import (
+from ShinobiCompass.modules.task import (
     set_task,
     end_task,
     clear_tasks,
