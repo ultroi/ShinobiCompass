@@ -3,3 +3,4 @@ uvicorn==0.18.0
 python-telegram-bot
 python-dotenv
 pymongo
+pytz
