@@ -35,7 +35,9 @@ async def empty_update(update: Update, context: CallbackContext, OWNER_SUDO: lis
 async def start(update: Update, context: CallbackContext) -> None:
     global UPDATE_MESSAGE
     user = update.effective_user
-    update_text = UPDATE_MESSAGE if UPDATE_MESSAGE else "No Updates Available"
+    # Use a default message if UPDATE_MESSAGE is None
+    update_text = UPDATE_MESSAGE or "No Updates Available"
+    
     buttons = [
         [InlineKeyboardButton("📖 Help", callback_data="help_bm_commands")],
         [InlineKeyboardButton("📣 Updates", callback_data="show_updates")],
@@ -55,6 +57,7 @@ async def start(update: Update, context: CallbackContext) -> None:
         f"{update_text}"
     )
     await update.message.reply_text(welcome_message, parse_mode="HTML", reply_markup=reply_markup)
+
 
 # Callback query handler for help menu
 async def help_callback_handler(update: Update, context: CallbackContext) -> None:
