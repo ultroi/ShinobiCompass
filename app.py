@@ -46,6 +46,17 @@ application = ApplicationBuilder().token(BOT_TOKEN).build()
 
 # Add handlers
 application.add_handler(CommandHandler("start", start))
+
+# Task handlers
+application.add_handler(CommandHandler("task", set_task))
+application.add_handler(CommandHandler("endtask", end_task))
+application.add_handler(CommandHandler("clearall", clear_tasks))
+application.add_handler(CommandHandler("canceltask", cancel_task))
+
+# Inventory submission handlers
+application.add_handler(CommandHandler("finv", lambda update, context: submit_inventory(update, context, "finv")))
+application.add_handler(CommandHandler("linv", lambda update, context: submit_inventory(update, context, "linv")))
+application.add_handler(CommandHandler("taskresult", taskresult))
 application.add_handler(CommandHandler("bm", bm))
 application.add_handler(CommandHandler("addsudo", addsudo))
 application.add_handler(CommandHandler("rmsudo", removesudo))
