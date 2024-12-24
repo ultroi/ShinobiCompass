@@ -4,7 +4,7 @@ from telegram import Update
 import telegram
 import asyncio
 from telegram.ext import CallbackContext
-from database import db
+from ShinobiCompass.database import db
 import re
 import uuid
 from modules.decorate import authorize
