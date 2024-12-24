@@ -3,6 +3,8 @@ from telegram.ext import ContextTypes, CommandHandler
 from ShinobiCompass.database import db  # Assuming db is already initialized to work with MongoDB
 import os
 
+OWNER_ID = 5956598856
+
 # Helper function to check if the user is the owner
 async def is_owner(update: Update) -> bool:
     if update.message and update.message.from_user:
