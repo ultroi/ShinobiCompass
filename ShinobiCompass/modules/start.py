@@ -1,21 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 from ShinobiCompass.database import db
-
-# Helper function to check if the user is the owner or sudo user
-async def is_owner_or_sudo(update: Update) -> bool:
-    user_id = update.effective_user.id
-    
-    # Check if the user is the owner
-    if user_id == OWNER_ID:
-        return True
-    
-    # Check if the user is a sudo user by querying MongoDB
-    sudo_user = await db[SUDO_USERS_COLLECTION].find_one({"user_id": user_id})
-    if sudo_user:
-        return True
-    
-    return False
+from ShinobiCompass.modules.sudo import is_owner_or_sudo
 
 # Command for sudo users/owners to update the message
 async def update_message(update: Update, context: CallbackContext) -> None:
