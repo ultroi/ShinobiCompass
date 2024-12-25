@@ -208,17 +208,17 @@ async def edit_task_message(context: CallbackContext, chat_id: int, message_id: 
     )
 
 async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
-    # Wait until the task end time (you can calculate it if necessary)
+    # Wait until the task end time
     now_ist = datetime.now(IST)
-    delay = 60  # 1 minute delay before deleting
+    task_end_time = task['end_time']
+    delay = (task_end_time - now_ist).total_seconds() + 60  # Wait 1 minute after the task ends
 
-    # Wait for 1 minute
+    # Wait for 1 minute after the task end time
     await asyncio.sleep(delay)
 
     # Show the leaderboard immediately after task ends
     await taskresult(chat_id, context)
 
-    # Delete the task from the database after waiting 1 minute
     # Unpin the task message (if it exists)
     if 'message_id' in task:
         try:
@@ -234,7 +234,6 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
 
     # Delete the task from the database
     tasks_collection.delete_one({"_id": task['_id']})
-
 
 async def submit_inventory(update: Update, context: CallbackContext, inventory_type: str) -> None:
     context = context  # To avoid unused variable warning
