@@ -153,6 +153,15 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
         )
         await query.edit_message_text(extra_help_text, parse_mode="HTML", reply_markup=reply_markup)
 
+# Updates Callback
+async def show_updates_callback(update: Update, context: CallbackContext) -> None:
+    global UPDATE_MESSAGE
+    query = update.callback_query
+    await query.answer()
+    update_text = UPDATE_MESSAGE or "❄️ No Updates Available. Stay cozy and check back later!"
+    await query.edit_message_text(f"📣 <b>Updates:</b>\n\n{update_text}", parse_mode="HTML")
+    
+
 # Back to Main Menu Command
 async def back_to_main(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
