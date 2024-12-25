@@ -56,7 +56,6 @@ async def start(update: Update, context: CallbackContext) -> None:
     buttons = [
         [InlineKeyboardButton("📖 Help", callback_data="help_bm_commands")],
         [InlineKeyboardButton("📣 Updates", callback_data="show_updates")],
-        [InlineKeyboardButton("🏠 Back to Main Menu", callback_data="back_to_main")],
     ]
     reply_markup = InlineKeyboardMarkup(buttons)
     
@@ -74,7 +73,8 @@ async def start(update: Update, context: CallbackContext) -> None:
     )
     await update.message.reply_text(welcome_message, parse_mode="HTML", reply_markup=reply_markup)
 
-# Callback Query Handlers
+
+# Updated help callback handler
 async def help_callback_handler(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
@@ -83,6 +83,7 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
         buttons = [
             [InlineKeyboardButton("Task Commands", callback_data="help_task_page_1")],
             [InlineKeyboardButton("Extra", callback_data="help_extra")],
+            [InlineKeyboardButton("🏠 Back to Main Menu", callback_data="back_to_main")],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         help_text = (
@@ -100,7 +101,8 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
     elif query.data == "help_task_page_1":
         buttons = [
             [InlineKeyboardButton("Inv Submission", callback_data="help_task_page_2")],
-            [InlineKeyboardButton("Black Market", callback_data="help_bm_commands")],
+            [InlineKeyboardButton("Back", callback_data="help_bm_commands")],
+            [InlineKeyboardButton("🏠 Back to Main Menu", callback_data="back_to_main")],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         help_text = (
@@ -122,6 +124,7 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
         buttons = [
             [InlineKeyboardButton("Admin Task", callback_data="help_task_page_1")],
             [InlineKeyboardButton(" Back", callback_data="help_bm_commands")],
+            [InlineKeyboardButton("🏠 Back to Main Menu", callback_data="back_to_main")],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         help_text = (
@@ -141,6 +144,7 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
     elif query.data == "help_extra":
         buttons = [
             [InlineKeyboardButton("Back", callback_data="help_bm_commands")],
+            [InlineKeyboardButton("🏠 Back to Main Menu", callback_data="back_to_main")],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         extra_help_text = (
@@ -149,16 +153,7 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
         )
         await query.edit_message_text(extra_help_text, parse_mode="HTML", reply_markup=reply_markup)
 
-# Updates Callback
-async def show_updates_callback(update: Update, context: CallbackContext) -> None:
-    # Fetch the update message from the database
-    update_message = collection.find_one({"_id": "update_message"})
-    update_text = update_message["message"] if update_message and update_message["message"] else "❄️ No Updates Available. Stay cozy and check back later!"
-    query = update.callback_query
-    await query.answer()
-    await query.edit_message_text(f"📣 <b>Updates:</b>\n\n{update_text}", parse_mode="HTML")
-
-# New callback for returning to main menu
+# Back to Main Menu Command
 async def back_to_main(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
-    await start(update, context)  # Call the start command again to show main menu
+    await start(update, context)  # Show main menu again with the updated buttons
