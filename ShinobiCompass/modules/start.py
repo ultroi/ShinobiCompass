@@ -155,12 +155,17 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
 
 # Updates Callback
 async def show_updates_callback(update: Update, context: CallbackContext) -> None:
-    global UPDATE_MESSAGE
     query = update.callback_query
     await query.answer()
-    update_text = UPDATE_MESSAGE or "❄️ No Updates Available. Stay cozy and check back later!"
+
+    # Log the callback data to verify it's being triggered
+    logger.info(f"Callback received: {query.data}")
+
+    # Fetch the update message from the database
+    update_message = collection.find_one({"_id": "update_message"})
+    update_text = update_message["message"] if update_message and update_message["message"] else "❄️ No Updates Available. Stay cozy and check back later!"
+
     await query.edit_message_text(f"📣 <b>Updates:</b>\n\n{update_text}", parse_mode="HTML")
-    
 
 # Back to Main Menu Command
 async def back_to_main(update: Update, context: CallbackContext) -> None:
