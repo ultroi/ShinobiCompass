@@ -88,7 +88,6 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
         buttons = [
             [InlineKeyboardButton("Task Commands", callback_data="help_task_page_1")],
             [InlineKeyboardButton("Extra", callback_data="help_extra")],
-            [InlineKeyboardButton("Main Menu", callback_data="back_to_main")],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         help_text = (
@@ -107,7 +106,6 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
         buttons = [
             [InlineKeyboardButton("Inv Submission", callback_data="help_task_page_2")],
             [InlineKeyboardButton("Back", callback_data="help_bm_commands")],
-            [InlineKeyboardButton("Main Menu", callback_data="back_to_main")],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         help_text = (
@@ -129,7 +127,6 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
         buttons = [
             [InlineKeyboardButton("Admin Task", callback_data="help_task_page_1")],
             [InlineKeyboardButton(" Back", callback_data="help_bm_commands")],
-            [InlineKeyboardButton("Main Menu", callback_data="back_to_main")],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         help_text = (
@@ -149,11 +146,10 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
     elif query.data == "help_extra":
         buttons = [
             [InlineKeyboardButton("Back", callback_data="help_bm_commands")],
-            [InlineKeyboardButton("Main Menu", callback_data="back_to_main")],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         extra_help_text = (
-            "<b>  👾 Extra 👾</b>\n\n"
+            "👾<b>     Extra  </b>\n\n"
             "🔸 <b>/iseal</b> - Check info about sealing techniques.\n"
             "🔸 <b>/xp</b> - View how much exploration is left and the next level-up reward.\n"
         )
