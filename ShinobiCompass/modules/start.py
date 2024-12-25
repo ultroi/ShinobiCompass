@@ -88,7 +88,7 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
         buttons = [
             [InlineKeyboardButton("Task Commands", callback_data="help_task_page_1")],
             [InlineKeyboardButton("Extra", callback_data="help_extra")],
-            [InlineKeyboardButton("🏠 Back to Main Menu", callback_data="back_to_main")],
+            [InlineKeyboardButton("Main Menu", callback_data="back_to_main")],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         help_text = (
@@ -107,7 +107,7 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
         buttons = [
             [InlineKeyboardButton("Inv Submission", callback_data="help_task_page_2")],
             [InlineKeyboardButton("Back", callback_data="help_bm_commands")],
-            [InlineKeyboardButton("🏠 Back to Main Menu", callback_data="back_to_main")],
+            [InlineKeyboardButton("Main Menu", callback_data="back_to_main")],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         help_text = (
@@ -129,7 +129,7 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
         buttons = [
             [InlineKeyboardButton("Admin Task", callback_data="help_task_page_1")],
             [InlineKeyboardButton(" Back", callback_data="help_bm_commands")],
-            [InlineKeyboardButton("🏠 Back to Main Menu", callback_data="back_to_main")],
+            [InlineKeyboardButton("Main Menu", callback_data="back_to_main")],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         help_text = (
@@ -149,10 +149,11 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
     elif query.data == "help_extra":
         buttons = [
             [InlineKeyboardButton("Back", callback_data="help_bm_commands")],
-            [InlineKeyboardButton("🏠 Back to Main Menu", callback_data="back_to_main")],
+            [InlineKeyboardButton("Main Menu", callback_data="back_to_main")],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         extra_help_text = (
+            "<b>  👾 Extra 👾</b>\n\n"
             "🔸 <b>/iseal</b> - Check info about sealing techniques.\n"
             "🔸 <b>/xp</b> - View how much exploration is left and the next level-up reward.\n"
         )
@@ -171,9 +172,12 @@ async def show_updates_callback(update: Update, context: CallbackContext) -> Non
 
 # Back to Main Menu Command
 async def back_to_main(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    await query.answer()  # Always acknowledge the callback query
+    
     user = update.effective_user
     await start(update, context)  # Show main menu again with the updated buttons
-
+    
 async def help_extra(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
