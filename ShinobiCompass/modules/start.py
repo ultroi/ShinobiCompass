@@ -4,6 +4,11 @@ from ShinobiCompass.database import db
 from ShinobiCompass.modules.sudo import is_owner_or_sudo
 
 # Command for sudo users/owners to update the message
+# Assuming db is already imported and initialized
+
+# Create a new collection reference within the existing db object
+collection = db.message_collector  # This is your new collection
+
 async def update_message(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
     if not await is_owner_or_sudo(update):  # Check if the user is authorized
@@ -19,7 +24,8 @@ async def update_message(update: Update, context: CallbackContext) -> None:
         return
 
     if new_message:
-        collection.update_one({"_id": "update_message"}, {"$set": {"message": new_message}}, upsert=True)  # Use the correct collection object
+        # Update the document in the new collection
+        collection.update_one({"_id": "update_message"}, {"$set": {"message": new_message}}, upsert=True)
         await update.message.reply_text(f"✅ Update message set to:\n\n<b>{new_message}</b>", parse_mode="HTML")
     else:
         await update.message.reply_text("⚠️ The replied message is empty.")
