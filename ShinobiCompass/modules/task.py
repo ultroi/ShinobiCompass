@@ -164,7 +164,7 @@ async def set_task(update: Update, context: CallbackContext) -> None:
         )
 
 async def edit_task_message(context: CallbackContext, chat_id: int, message_id: int, task_id: int, start_time_str: str, end_time_str: str, description: str, reward_value: int, reward_type: str, delay: float):
-    now_ist =datetime.now(IST
+    now_ist =datetime.now(IST)
     # First, edit the message when the task starts
     await asyncio.sleep(delay)
     
