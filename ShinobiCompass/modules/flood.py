@@ -1,88 +1,96 @@
 from datetime import datetime, timedelta
 from functools import wraps
-from collections import defaultdict
-import asyncio
+from pymongo import MongoClient
+from ShinobiCompass.database import db
 
-# Track user activity
-user_last_command_time = {}
-user_warn_count = defaultdict(int)  # {user_id: warn_count}
-user_blocked = {}  # {user_id: unban_time}
+# Constants
+COOLDOWN = 3  # Minimum time between commands (in seconds)
+SPAM_THRESHOLD = 5  # Maximum allowed commands in SPAM_TIME_FRAME
+SPAM_TIME_FRAME = 10  # Time frame to detect spamming (in seconds)
+WARN_LIMIT = 3  # Maximum warnings before escalating penalties
+PAUSE_DURATIONS = [30 * 60, 60 * 60, 24 * 60 * 60]  # Penalty durations: 30 mins, 1 hr, 1 day
 
-# Settings
-COOLDOWN = timedelta(seconds=3)  # Wait time between commands
-SPAM_THRESHOLD = 5  # Max commands in 10 seconds
-SPAM_TIME_FRAME = timedelta(seconds=10)
-WARN_LIMIT = 3  # Number of warnings before escalating
-PAUSE_DURATIONS = [1800, 3600, 86400]  # 30 min, 1 hour, 1 day in seconds
+# MongoDB collections
+users_collection = db["users"]  # Collection to store user activity
 
-# Flood control wrapper
 def flood_control(func):
     @wraps(func)
-    async def wrapper(update, context, *args, **kwargs):
-        user = update.effective_user
-        if not user:
-            return await func(update, context, *args, **kwargs)  # Ignore non-user messages
-        
-        user_id = user.id
-        now = datetime.now()
+    async def wrapper(update, context):
+        user_id = update.effective_user.id
+        current_time = datetime.utcnow()
+
+        # Fetch or initialize user data
+        user_data = users_collection.find_one({"user_id": user_id})
+        if not user_data:
+            user_data = {
+                "user_id": user_id,
+                "activity": [],
+                "warnings": 0,
+                "block_end_time": None
+            }
+            users_collection.insert_one(user_data)
 
         # Check if user is blocked
-        if user_id in user_blocked:
-            unban_time = user_blocked[user_id]
-            if now < unban_time:
-                remaining_time = (unban_time - now).seconds
+        if user_data["block_end_time"]:
+            block_end_time = user_data["block_end_time"]
+            if current_time < block_end_time:
+                remaining_time = int((block_end_time - current_time).total_seconds())
                 await update.message.reply_text(
-                    f"⛔ You're temporarily paused for spamming. Try again in {remaining_time // 60} minutes."
+                    f"🚫 You are temporarily paused. Try again after {remaining_time} seconds."
                 )
                 return
             else:
-                del user_blocked[user_id]  # Unblock user after cooldown
-
-        # Enforce cooldown between commands
-        if user_id in user_last_command_time:
-            last_command_time = user_last_command_time[user_id]
-            if now - last_command_time < COOLDOWN:
-                await update.message.reply_text(
-                    f"⚠️ Please wait {COOLDOWN.seconds} seconds between commands."
+                # Unblock user after block period expires
+                users_collection.update_one(
+                    {"user_id": user_id},
+                    {"$set": {"block_end_time": None, "warnings": 0}}
                 )
-                return
 
-        # Track user activity within the spam time frame
-        user_activity = [
-            timestamp for timestamp in user_last_command_time.get(user_id, [])
-            if now - timestamp <= SPAM_TIME_FRAME
+        # Filter activity timestamps within the SPAM_TIME_FRAME
+        recent_activity = [
+            timestamp for timestamp in user_data["activity"]
+            if timestamp >= current_time - timedelta(seconds=SPAM_TIME_FRAME)
         ]
-        user_activity.append(now)
-        user_last_command_time[user_id] = user_activity
 
-        # Check for spam
-        if len(user_activity) > SPAM_THRESHOLD:
-            user_warn_count[user_id] += 1
-            warn_count = user_warn_count[user_id]
+        # Enforce cooldown
+        if recent_activity and (current_time - recent_activity[-1]).total_seconds() < COOLDOWN:
+            await update.message.reply_text(
+                f"⏳ Please wait {COOLDOWN} seconds between commands."
+            )
+            return
 
-            if warn_count <= WARN_LIMIT:
+        # Update activity log
+        recent_activity.append(current_time)
+        users_collection.update_one(
+            {"user_id": user_id},
+            {"$set": {"activity": recent_activity}}
+        )
+
+        # Check for spamming
+        if len(recent_activity) >= SPAM_THRESHOLD:
+            warnings = user_data["warnings"] + 1
+            if warnings <= WARN_LIMIT:
+                users_collection.update_one(
+                    {"user_id": user_id},
+                    {"$set": {"warnings": warnings}}
+                )
                 await update.message.reply_text(
-                    f"⚠️ Warning {warn_count}/{WARN_LIMIT}: Stop spamming, or your activity will be paused."
+                    f"⚠️ Warning {warnings}/{WARN_LIMIT}: Stop spamming!"
                 )
             else:
-                # Temporarily pause the user
-                pause_duration = PAUSE_DURATIONS[min(warn_count - WARN_LIMIT - 1, len(PAUSE_DURATIONS) - 1)]
-                user_blocked[user_id] = now + timedelta(seconds=pause_duration)
-                if warn_count - WARN_LIMIT < len(PAUSE_DURATIONS):
-                    await update.message.reply_text(
-                        f"🚨 You are temporarily paused for {pause_duration // 60} minutes due to excessive spamming."
-                    )
-                else:
-                    await update.message.reply_text(
-                        "❌ You have been permanently banned for repeated spamming."
-                    )
-                    # Optional: Add permanent ban logic here (e.g., remove from database)
-
+                # Temporarily block user with increasing durations
+                pause_duration = PAUSE_DURATIONS[min(warnings - WARN_LIMIT, len(PAUSE_DURATIONS) - 1)]
+                block_end_time = current_time + timedelta(seconds=pause_duration)
+                users_collection.update_one(
+                    {"user_id": user_id},
+                    {"$set": {"block_end_time": block_end_time}}
+                )
+                await update.message.reply_text(
+                    f"🚫 Your activity is paused for {pause_duration // 60} minutes."
+                )
                 return
 
-        # Update last command time and proceed with the original handler
-        user_last_command_time[user_id] = now
-        return await func(update, context, *args, **kwargs)
+        # Execute the command
+        await func(update, context)
 
     return wrapper
-
