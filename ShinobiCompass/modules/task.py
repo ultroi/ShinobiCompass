@@ -164,11 +164,9 @@ async def set_task(update: Update, context: CallbackContext) -> None:
         )
 
 async def edit_task_message(context: CallbackContext, chat_id: int, message_id: int, task_id: int, start_time_str: str, end_time_str: str, description: str, reward_value: int, reward_type: str, delay: float):
-    now_ist =datetime.now(IST)
-    # First, edit the message when the task starts
     await asyncio.sleep(delay)
     
-    # After the task start time, edit the message to display the details
+    # Edit message to show task details after the start time
     await context.bot.edit_message_text(
         chat_id=chat_id,
         message_id=message_id,
@@ -185,33 +183,31 @@ async def edit_task_message(context: CallbackContext, chat_id: int, message_id: 
         ),
         parse_mode=telegram.constants.ParseMode.HTML
     )
-
-    # Wait for the task to complete before updating the message
-    task_duration = (datetime.combine(now_ist.date(), datetime.strptime(end_time_str, '%I:%M%p').time()) - now_ist).total_seconds()
-    await asyncio.sleep(task_duration)
     
-    # After task has ended, update the message to reflect task completion
+    # Calculate task duration and wait until the task ends
+    now_ist = datetime.now(IST)
+    task_end_time = IST.localize(datetime.combine(now_ist.date(), datetime.strptime(end_time_str, '%I:%M%p').time()))
+    task_duration = (task_end_time - now_ist).total_seconds()
+
+    await asyncio.sleep(task_duration)
+
+    # Edit the message to indicate the task has ended
     await context.bot.edit_message_text(
         chat_id=chat_id,
         message_id=message_id,
         text=(
-            f"<b><u>🔴 Today's Task has Task Ended 🔴</u></b>\n\n"
-            "Thank you for your participation 🙏\n"
+            f"<b><u>🔴 Task Has Ended 🔴</u></b>\n\n"
+            "Thank you for your participation 🙏"
         ),
         parse_mode=telegram.constants.ParseMode.HTML
     )
 
-    # Optionally, you can also mark the task as completed in the database
-    tasks_collection.update_one(
-        {"task_id": task_id},
-        {"$set": {"status": "completed", "end_time": datetime.now()}}
-    )
 
 async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
     # Wait until the task end time
     now_ist = datetime.now(IST)
     task_end_time = task['end_time']
-    delay = (task_end_time - now_ist).total_seconds() + 60  # Wait 1 minute after the task ends
+    delay = (task_end_time - now_ist).total_seconds()   
 
     # Wait for 1 minute after the task end time
     await asyncio.sleep(delay)
