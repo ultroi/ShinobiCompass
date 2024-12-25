@@ -62,13 +62,13 @@ application = ApplicationBuilder().token(BOT_TOKEN).build()
 # Add handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("update", update_message))  # Update message command
-application.add_handler(CommandHandler("empty_update", empty_update))
+application.add_handler(CommandHandler("emptyupdate", empty_update))
 application.add_handler(CallbackQueryHandler(help_callback_handler, pattern="help_bm_commands"))
 application.add_handler(CallbackQueryHandler(help_callback_handler, pattern="help_task_page_1"))
 application.add_handler(CallbackQueryHandler(help_callback_handler, pattern="help_task_page_2"))
 application.add_handler(CallbackQueryHandler(show_updates_callback, pattern="show_updates"))
 application.add_handler(CallbackQueryHandler(back_to_main, pattern="back_to_main"))
-application.add_handler(CallbackQueryHandler(help_callback_handler, pattern="help_extra"))
+application.add_handler(CallbackQueryHandler(help_extra, pattern="help_extra"))
 
 # Task handlers
 application.add_handler(CommandHandler("task", set_task))
