@@ -19,11 +19,11 @@ async def update_message(update: Update, context: CallbackContext) -> None:
         return
 
     if new_message:
-        db.update_one({"_id": "update_message"}, {"$set": {"message": new_message}}, upsert=True)
+        collection.update_one({"_id": "update_message"}, {"$set": {"message": new_message}}, upsert=True)  # Use the correct collection object
         await update.message.reply_text(f"✅ Update message set to:\n\n<b>{new_message}</b>", parse_mode="HTML")
     else:
         await update.message.reply_text("⚠️ The replied message is empty.")
-
+        
 # Command to clear the update message
 async def empty_update(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
