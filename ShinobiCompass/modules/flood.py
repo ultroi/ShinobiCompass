@@ -3,6 +3,7 @@ from functools import wraps
 from telegram import Update
 from telegram.ext import CommandHandler, CallbackContext
 from ShinobiCompass.database import db
+from ShinobiCompass.modules.sudo import is_owner_or_sudo
 
 # Constants (Initial Values)
 COOLDOWN = 3  # Minimum time between commands (in seconds)
