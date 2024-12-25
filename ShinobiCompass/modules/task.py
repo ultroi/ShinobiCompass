@@ -164,6 +164,7 @@ async def set_task(update: Update, context: CallbackContext) -> None:
         )
 
 async def edit_task_message(context: CallbackContext, chat_id: int, message_id: int, task_id: int, start_time_str: str, end_time_str: str, description: str, reward_value: int, reward_type: str, delay: float):
+    now_ist =datetime.now(IST
     # First, edit the message when the task starts
     await asyncio.sleep(delay)
     
@@ -207,31 +208,29 @@ async def edit_task_message(context: CallbackContext, chat_id: int, message_id: 
     )
 
 async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
-    # Wait until the task end time
+    # Wait until the task end time (you can calculate it if necessary)
     now_ist = datetime.now(IST)
-    delay = (task['end_time'] - now_ist).total_seconds()
+    delay = 60  # 1 minute delay before deleting
+
+    # Wait for 1 minute
     await asyncio.sleep(delay)
 
     # Show the leaderboard immediately after task ends
     await taskresult(chat_id, context)
-    
-    # Edit the task message to indicate that it has ended
-    if 'message_id' in task:
-        try:
-            await context.bot.edit_message_text(
-                chat_id=chat_id,
-                message_id=task['message_id'],
-                text="❌ <b>Task Has Ended</b>\n\nThe task has ended. Check the leaderboard for results.",
-                parse_mode=telegram.constants.ParseMode.HTML,
-            )
-        except telegram.error.BadRequest as e:
-            print(f"Error while editing message: {e}")
 
-        # Unpin the task message
+    # Delete the task from the database after waiting 1 minute
+    # Unpin the task message (if it exists)
+    if 'message_id' in task:
         try:
             await context.bot.unpin_chat_message(chat_id, task['message_id'])
         except telegram.error.BadRequest as e:
             print(f"Error while unpinning: {e}")
+
+    # Update the task status to "completed"
+    tasks_collection.update_one(
+        {"_id": task['_id']},
+        {"$set": {"status": "completed", "end_time": datetime.now()}}
+    )
 
     # Delete the task from the database
     tasks_collection.delete_one({"_id": task['_id']})
