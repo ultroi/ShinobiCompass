@@ -1,9 +1,9 @@
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, CallbackContext
+from telegram.ext import Application, CommandHandler, CallbackContext
 import re
 
-# Function to calculate XP details with the updated format and HTML
-def calculate_xp_info(inventory_text):
+# Ensure this function is asynchronous if necessary
+async def calculate_xp_info(inventory_text):
     try:
         # Extract information from the inventory using regex
         name_match = re.search(r"┣ 👤 Name: (.+)", inventory_text)
@@ -71,17 +71,20 @@ def calculate_xp_info(inventory_text):
         return f"Error processing inventory: {str(e)}"
 
 # /xp command handler to process the inventory text from the message
-def xp_command(update: Update, context: CallbackContext):
+async def xp_command(update: Update, context: CallbackContext):
     if update.message.reply_to_message:
         # Get the inventory text from the replied message
         inventory_text = update.message.reply_to_message.text
-        xp_info = calculate_xp_info(inventory_text)
-        update.message.reply_text(xp_info, parse_mode="HTML")
+        xp_info = await calculate_xp_info(inventory_text)  # Awaiting the function call here
+        if xp_info:
+            await update.message.reply_text(xp_info, parse_mode="HTML")  # Awaiting reply_text here with HTML parse mode
+        else:
+            await update.message.reply_text("Error: Could not calculate XP details.", parse_mode="HTML")
     else:
-        update.message.reply_text("Please reply to an inventory message to get XP details.")
+        await update.message.reply_text("Please reply to an inventory message to get XP details.", parse_mode="HTML")
 
 # /iseal command handler to display sealing techniques
-def iseal_command(update: Update, context: CallbackContext):
+async def iseal_command(update: Update, context: CallbackContext):
     response = """
 <b>🍃 Naruto Sealing Techniques 🍃</b>
 
@@ -110,7 +113,6 @@ def iseal_command(update: Update, context: CallbackContext):
 🌟 <b>Team Synergy Bonus</b> 🌟  
 ⚔️ If Hashirama Senju or Kushina Uzumaki is in your team, the chances of catching the Beast with any seal will be greatly boosted!
 
-RYUK, [12/25/2024 10:01 PM]
 🎮 <b>Shinobi Tips</b>:  
 🍥 Save your chakra for stronger seals.  
 🍥 Build a balanced team for maximum success.  
@@ -118,4 +120,4 @@ RYUK, [12/25/2024 10:01 PM]
 
 <b>💡 Believe in your ninja way and seal the Beast!</b>
 """
-    update.message.reply_text(response, parse_mode="HTML")
+    await update.message.reply_text(response, parse_mode="HTML")  # Awaiting reply_text here with HTML parse mode
