@@ -405,7 +405,7 @@ async def taskresult(chat_id: int, context: CallbackContext) -> None:
         return
     
     reward_value, reward_type = reward_match.groups()
-    leaderboard_text = f"🏆 <b>Task Result (<b>Reward :</b>{reward_type})</b> 🏆\n\n"
+    leaderboard_text = f"🏆 <b>Task Result (<b>Reward : </b>{reward_type})</b> 🏆\n\n"
     for user_id, glory_diff in leaderboard:
         user = await context.bot.get_chat_member(chat_id, user_id)
         reward_amount = int(reward_value) * glory_diff
