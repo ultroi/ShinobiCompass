@@ -11,7 +11,7 @@ from telegram.ext import (
 )
 
 # Import custom 
-from ShinobiCompass.modules.start import start, help_callback_handler, empty_update, show_updates_callback, update_message
+from ShinobiCompass.modules.start import start, help_callback_handler, empty_update, back_to_main, help_extra, show_updates_callback, update_message
 from ShinobiCompass.modules.bm import bm, handle_message
 from ShinobiCompass.modules.sudo import addsudo, removesudo, sudolist
 from ShinobiCompass.modules.stats import stats, handle_stats_buttons
@@ -67,6 +67,8 @@ application.add_handler(CallbackQueryHandler(help_callback_handler, pattern="hel
 application.add_handler(CallbackQueryHandler(help_callback_handler, pattern="help_task_page_1"))
 application.add_handler(CallbackQueryHandler(help_callback_handler, pattern="help_task_page_2"))
 application.add_handler(CallbackQueryHandler(show_updates_callback, pattern="show_updates"))
+application.add_handler(CallbackQueryHandler(back_to_main, pattern="back_to_main"))
+application.add_handler(CallbackQueryHandler(help_callback_handler, pattern="help_extra"))
 
 # Task handlers
 application.add_handler(CommandHandler("task", set_task))
