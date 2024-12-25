@@ -1,7 +1,5 @@
 from datetime import datetime, timedelta
 from functools import wraps
-from pymongo import MongoClient
-from ShinobiCompass.database import db
 
 # Constants
 COOLDOWN = 3  # Minimum time between commands (in seconds)
@@ -30,7 +28,7 @@ def flood_control(func):
             }
             users_collection.insert_one(user_data)
 
-        # Check if user is blocked
+        # Check if the user is blocked
         if user_data["block_end_time"]:
             block_end_time = user_data["block_end_time"]
             if current_time < block_end_time:
@@ -78,15 +76,18 @@ def flood_control(func):
                     f"⚠️ Warning {warnings}/{WARN_LIMIT}: Stop spamming!"
                 )
             else:
-                # Temporarily block user with increasing durations
-                pause_duration = PAUSE_DURATIONS[min(warnings - WARN_LIMIT, len(PAUSE_DURATIONS) - 1)]
+                # Temporarily block the user with increasing durations
+                penalty_index = warnings - WARN_LIMIT - 1
+                pause_duration = PAUSE_DURATIONS[min(penalty_index, len(PAUSE_DURATIONS) - 1)]
                 block_end_time = current_time + timedelta(seconds=pause_duration)
+
                 users_collection.update_one(
                     {"user_id": user_id},
                     {"$set": {"block_end_time": block_end_time}}
                 )
+
                 await update.message.reply_text(
-                    f"🚫 Your activity is paused for {pause_duration // 60} minutes."
+                    f"🚫 You are temporarily blocked for {pause_duration // 60} minutes."
                 )
                 return
 
