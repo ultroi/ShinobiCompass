@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
 from functools import wraps
+from telegram import Update
+from telegram.ext import CommandHandler, CallbackContext
 from ShinobiCompass.database import db
 
-# Constants
+# Constants (Initial Values)
 COOLDOWN = 3  # Minimum time between commands (in seconds)
 SPAM_THRESHOLD = 5  # Maximum allowed commands in SPAM_TIME_FRAME
 SPAM_TIME_FRAME = 10  # Time frame to detect spamming (in seconds)
@@ -96,3 +98,64 @@ def flood_control(func):
         await func(update, context)
 
     return wrapper
+
+# /floods command to show the current flood control settings
+async def floods(update: Update, context: CallbackContext):
+    if not is_owner_or_sudo(update.effective_user.id):
+        await update.message.reply_text("🚫 You do not have permission to view the flood settings.")
+        return
+
+    flood_settings = (
+        f"🛑 **Current Flood Control Settings** 🛑\n\n"
+        f"⏳ COOLDOWN: {COOLDOWN} seconds\n"
+        f"⚠️ SPAM_THRESHOLD: {SPAM_THRESHOLD} commands\n"
+        f"⏱️ SPAM_TIME_FRAME: {SPAM_TIME_FRAME} seconds\n"
+        f"🚫 WARN_LIMIT: {WARN_LIMIT} warnings\n"
+        f"⏳ PAUSE_DURATIONS: {', '.join([str(duration // 60) + ' mins' for duration in PAUSE_DURATIONS])}"
+    )
+
+    await update.message.reply_text(flood_settings)
+
+# /set command to modify constants
+async def set_constants(update: Update, context: CallbackContext):
+    if not is_owner_or_sudo(update.effective_user.id):
+        await update.message.reply_text("🚫 You do not have permission to modify the constants.")
+        return
+
+    if len(context.args) < 2:
+        await update.message.reply_text("Usage: /set <constant_name> <value>")
+        return
+
+    constant_name = context.args[0].lower()
+    try:
+        if constant_name == "cooldown":
+            global COOLDOWN
+            COOLDOWN = int(context.args[1])
+            await update.message.reply_text(f"✅ COOLDOWN time has been updated to {COOLDOWN} seconds.")
+
+        elif constant_name == "spam_threshold":
+            global SPAM_THRESHOLD
+            SPAM_THRESHOLD = int(context.args[1])
+            await update.message.reply_text(f"✅ SPAM_THRESHOLD has been updated to {SPAM_THRESHOLD}.")
+
+        elif constant_name == "spam_time_frame":
+            global SPAM_TIME_FRAME
+            SPAM_TIME_FRAME = int(context.args[1])
+            await update.message.reply_text(f"✅ SPAM_TIME_FRAME has been updated to {SPAM_TIME_FRAME} seconds.")
+
+        elif constant_name == "warn_limit":
+            global WARN_LIMIT
+            WARN_LIMIT = int(context.args[1])
+            await update.message.reply_text(f"✅ WARN_LIMIT has been updated to {WARN_LIMIT}.")
+
+        elif constant_name == "pause_durations":
+            durations = [int(x) for x in context.args[1:]]
+            global PAUSE_DURATIONS
+            PAUSE_DURATIONS = durations
+            await update.message.reply_text(f"✅ PAUSE_DURATIONS has been updated to {PAUSE_DURATIONS} seconds.")
+        
+        else:
+            await update.message.reply_text("⚠️ Invalid constant name. Valid names: cooldown, spam_threshold, spam_time_frame, warn_limit, pause_durations.")
+    except ValueError:
+        await update.message.reply_text("⚠️ Please provide a valid value for the constant.")
+
