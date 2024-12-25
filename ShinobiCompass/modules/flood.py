@@ -40,7 +40,7 @@ def flood_control(func):
                 await update.message.reply_text(
                     f"🚫 You are temporarily paused. Try again after {remaining_time} seconds."
                 )
-                return
+                return  # Ignore the command during the block time
             else:
                 # Unblock user after block period expires
                 users_collection.update_one(
@@ -59,7 +59,7 @@ def flood_control(func):
             await update.message.reply_text(
                 f"⏳ Please wait {COOLDOWN} seconds between commands."
             )
-            return
+            return  # Block further commands within the cooldown period
 
         # Update activity log
         recent_activity.append(current_time)
@@ -93,9 +93,9 @@ def flood_control(func):
                 await update.message.reply_text(
                     f"🚫 You are temporarily blocked for {pause_duration // 60} minutes."
                 )
-                return
+                return  # Block further commands until the pause is over
 
-        # Execute the command
+        # Execute the command after the cooldown and spamming checks
         await func(update, context)
 
     return wrapper
