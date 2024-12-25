@@ -120,12 +120,12 @@ async def set_task(update: Update, context: CallbackContext) -> None:
             message = await context.bot.send_message(
                 chat_id=chat_id,
                 text=(
-                    f"<b><u>📝 Today's Task</u></b>\n"
+                    f"<b><u>❄️📝 Today's Task ❄️</u></b>\n"
                     f"<b>Task ID:</b> <code>{task_id}</code>\n\n"
                     f"<b>Task Time:</b> <i>{start_time_str} - {end_time_str}</i>\n\n"
                     f"<b>Description:</b> <i>{description}</i>\n"
                     f"<b>Reward:</b> <i>{reward_value} {reward_type.lower()}</i>\n\n"
-                    f"⏳ The task will begin shortly. Get ready!"
+                    f"☃️ The task will begin shortly. Prepare yourself for the icy challenge ahead! ☃️"
                 ),
                 parse_mode=telegram.constants.ParseMode.HTML
             )
@@ -141,7 +141,7 @@ async def set_task(update: Update, context: CallbackContext) -> None:
                     f"<b>How to Participate:</b>\n"
                     f"1️⃣ <b>/finv</b> — Submit your starting inventory.\n"
                     f"2️⃣ <b>/linv</b> — Submit your last inventory.\n"
-                    f"🕒 Be sure to submit your participation before the task ends!"
+                    f"🌨️🕒 Make sure to submit your participation before the task expires in the frosty air!"
                 ),
                 parse_mode=telegram.constants.ParseMode.HTML
             )
@@ -169,15 +169,15 @@ async def edit_task_message(context: CallbackContext, chat_id: int, message_id: 
         chat_id=chat_id,
         message_id=message_id,
         text=(
-            f"<b><u>📝 Today's Task</u></b>\n"
-            f"<b>Task ID:</b><code>{task_id}</code>\n\n"
+            f"<b><u>❄️📝 Today's Task ❄️</u></b>\n"
+            f"<b>Task ID:</b> <code>{task_id}</code>\n\n"
             f"<b>Task Time:</b> <i>{start_time_str} - {end_time_str}</i>\n\n"
             f"<b>Description:</b> <i>{description}</i>\n"
             f"<b>Reward:</b> <i>{reward_value} {reward_type}</i>\n\n"
             f"<b>How to Participate:</b>\n"
             f"1️⃣ <b>/finv</b> — Submit your starting inventory.\n"
             f"2️⃣ <b>/linv</b> — Submit your last inventory.\n\n"
-            f"🕒 Be sure to submit your participation before the task ends!"
+            f"🌨️🕒 Make sure to submit your participation before the task expires in the frosty air!"
         ),
         parse_mode=telegram.constants.ParseMode.HTML
     )
