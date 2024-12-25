@@ -382,11 +382,11 @@ async def taskresult(chat_id: int, context: CallbackContext) -> None:
         return
     
     reward_value, reward_type = reward_match.groups()
-    leaderboard_text = f"🏆 <b>Task Result ({reward_type})</b> 🏆\n\n"
+    leaderboard_text = f"🏆 <b>Task Result (<b>Reward :</b>{reward_type})</b> 🏆\n\n"
     for user_id, glory_diff in leaderboard:
         user = await context.bot.get_chat_member(chat_id, user_id)
         reward_amount = int(reward_value) * glory_diff
-        leaderboard_text += f"🔸 <a href='tg://user?id={user_id}'>{user.user.first_name}</a> <code>{user_id}</code> {reward_amount} {reward_type}\n\n"
+        leaderboard_text += f"🔸 <a href='tg://user?id={user_id}'>{user.user.first_name}</a> <code>{user_id}</code> <code>{reward_amount}</code> {reward_type}\n\n"
 
     # Unpin the task message
     try:
