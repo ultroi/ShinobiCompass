@@ -3,9 +3,10 @@ from telegram.ext import CallbackContext
 from ShinobiCompass.database import db
 from ShinobiCompass.modules.sudo import is_owner_or_sudo
 
-# Command for sudo users/owners to update the message
-collection = db.message_collector  # Reference to the new collection
+# Reference to the new collection
+collection = db.message_collector  
 
+# Command for sudo users/owners to update the message
 async def update_message(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
     if not await is_owner_or_sudo(update):
@@ -26,22 +27,26 @@ async def update_message(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text(f"✅ Update message set to:\n\n<b>{new_message}</b>", parse_mode="HTML")
     else:
         await update.message.reply_text("⚠️ The replied message is empty.")
-        
+
+# Command for sudo users/owners to clear the message
 async def empty_update(update: Update, context: CallbackContext) -> None:
     user = update.effective_user
     if not await is_owner_or_sudo(update):
         await update.message.reply_text("❌ You are not authorized to use this command.")
         return
 
-    db.update_one({"_id": "update_message"}, {"$set": {"message": None}}, upsert=True)
+    # Clear the update message
+    collection.update_one({"_id": "update_message"}, {"$set": {"message": None}}, upsert=True)
     await update.message.reply_text("✅ Update message cleared.")
 
 # Start command with updated message status
 async def start(update: Update, context: CallbackContext) -> None:
-    global UPDATE_MESSAGE
-    user = update.effective_user
-    update_text = UPDATE_MESSAGE or "❄️ No Updates Available. Stay cozy and check back later!"
+    # Fetch the update message from the database
+    update_message = collection.find_one({"_id": "update_message"})
+    update_text = update_message["message"] if update_message and update_message["message"] else "❄️ No Updates Available. Stay cozy and check back later!"
     
+    user = update.effective_user
+
     # Checking the update status
     if update_text == "❄️ No Updates Available. Stay cozy and check back later!":
         update_status = "🔴 Stay tuned for next update or upcoming updates"
@@ -56,17 +61,17 @@ async def start(update: Update, context: CallbackContext) -> None:
     reply_markup = InlineKeyboardMarkup(buttons)
     
     welcome_message = (
-    f"❄️<b>Welcome, {user.first_name}!</b>❄️\n\n"
-    "⛄ <b>Your Assistant Bot for Naruto Game Bot is here to keep you warm this winter!</b>\n"
-    "Let me help you analyze black market deals, manage tasks, and much more as the cold breeze rolls in!\n\n"
-    "🌨️ <b>Winter Features:</b>\n"
-    "🔥 Black Market Analysis\n"
-    "🧣 Task Management\n"
-    "🧤 Inventory Tracking\n\n"
-    "☃️ <b>Current Updates:</b>\n"
-    f"{update_status}\n\n"
-    "❄️🎄Wishing you warmth, joy, and plenty of rewards this winter! 🎄❄️"
-)
+        f"❄️<b>Welcome, {user.first_name}!</b>❄️\n\n"
+        "⛄ <b>Your Assistant Bot for Naruto Game Bot is here to keep you warm this winter!</b>\n"
+        "Let me help you analyze black market deals, manage tasks, and much more as the cold breeze rolls in!\n\n"
+        "🌨️ <b>Winter Features:</b>\n"
+        "🔥 Black Market Analysis\n"
+        "🧣 Task Management\n"
+        "🧤 Inventory Tracking\n\n"
+        "☃️ <b>Current Updates:</b>\n"
+        f"{update_status}\n\n"
+        "❄️🎄Wishing you warmth, joy, and plenty of rewards this winter! 🎄❄️"
+    )
     await update.message.reply_text(welcome_message, parse_mode="HTML", reply_markup=reply_markup)
 
 # Callback Query Handlers
@@ -99,17 +104,17 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         help_text = (
-    "❄️<b>Task Management</b>❄️\n\n"
-    "🛠️ <b>Admin Commands (Only for Group):</b>\n\n"
-    "• <b>/task starttime-endtime <i>task description</i> (reward)</b>\n"
-    "  Create a new task for today with a specific name and reward format: <code>'coins', 'tokens', 'gems', or 'glory'</code>.\n\n"
-    "• <b>Ensure Reward must be in bracket</b> e.g: (2 gems/glory)\n"
-    "• <b>Ensure that the task command must be sent at least 1 minute before the task time</b>\n\n"
-    "• <b>/endtask</b> Used to end the current active task for the day.\n"
-    "• <b>/canceltask</b> Cancels the current active task before it ends.\n\n"
-    "📅 <b>Details:</b>\n"
-    "• Tasks expire at <b>midnight IST</b> Valid Time : 12:00am - 11:59pm.\n"
-    "• Use meaningful task names to easily track the task.\n"
+            "❄️<b>Task Management</b>❄️\n\n"
+            "🛠️ <b>Admin Commands (Only for Group):</b>\n\n"
+            "• <b>/task starttime-endtime <i>task description</i> (reward)</b>\n"
+            "  Create a new task for today with a specific name and reward format: <code>'coins', 'tokens', 'gems', or 'glory'</code>.\n\n"
+            "• <b>Ensure Reward must be in bracket</b> e.g: (2 gems/glory)\n"
+            "• <b>Ensure that the task command must be sent at least 1 minute before the task time</b>\n\n"
+            "• <b>/endtask</b> Used to end the current active task for the day.\n"
+            "• <b>/canceltask</b> Cancels the current active task before it ends.\n\n"
+            "📅 <b>Details:</b>\n"
+            "• Tasks expire at <b>midnight IST</b> Valid Time : 12:00am - 11:59pm.\n"
+            "• Use meaningful task names to easily track the task.\n"
         )
         await query.edit_message_text(help_text, parse_mode="HTML", reply_markup=reply_markup)
 
@@ -120,19 +125,16 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         help_text = (
-    "❄️<b>Task Management</b>❄️\n\n"
-    "🛠️ <b>Inventory Submission:</b>\n\n"
-    
-    "<b>In Group Chat:</b>\n"
-    "• <b>/finv</b>: To submit your starting inventory, reply to the latest inventory message and use the command.\n"
-    "• <b>/linv</b>: To submit your last inventory, reply to the latest inventory message and use the command.\n\n"
-    
-    "<b>In Private Chat:</b>\n"
-    "• <b>/finv <code>task_id</code></b>: To submit your starting inventory, copy the <b>task_id</b> from the task message and forward your starting inventory message from the Naruto bot. Then, use <code>/finv task_id</code>.\n"
-    "• <b>/linv <code>task_id</code></b>: To submit your ending inventory, copy the <b>task_id</b> from the task message and forward your ending inventory message. Then, use <code>/linv task_id</code>.\n\n"
-    
-    "📊 <b>Reward Calculation:</b>\n"
-    "• Formula: <code>(Ending Inventory - Starting Inventory) × Reward Value</code>\n\n"
+            "❄️<b>Task Management</b>❄️\n\n"
+            "🛠️ <b>Inventory Submission:</b>\n\n"
+            "<b>In Group Chat:</b>\n"
+            "• <b>/finv</b>: To submit your starting inventory, reply to the latest inventory message and use the command.\n"
+            "• <b>/linv</b>: To submit your last inventory, reply to the latest inventory message and use the command.\n\n"
+            "<b>In Private Chat:</b>\n"
+            "• <b>/finv <code>task_id</code></b>: To submit your starting inventory, copy the <b>task_id</b> from the task message and forward your starting inventory message from the Naruto bot. Then, use <code>/finv task_id</code>.\n"
+            "• <b>/linv <code>task_id</code></b>: To submit your ending inventory, copy the <b>task_id</b> from the task message and forward your ending inventory message. Then, use <code>/linv task_id</code>.\n\n"
+            "📊 <b>Reward Calculation:</b>\n"
+            "• Formula: <code>(Ending Inventory - Starting Inventory) × Reward Value</code>\n\n"
         )
         await query.edit_message_text(help_text, parse_mode="HTML", reply_markup=reply_markup)
 
@@ -149,10 +151,11 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
 
 # Updates Callback
 async def show_updates_callback(update: Update, context: CallbackContext) -> None:
-    global UPDATE_MESSAGE
+    # Fetch the update message from the database
+    update_message = collection.find_one({"_id": "update_message"})
+    update_text = update_message["message"] if update_message and update_message["message"] else "❄️ No Updates Available. Stay cozy and check back later!"
     query = update.callback_query
     await query.answer()
-    update_text = UPDATE_MESSAGE or "❄️ No Updates Available. Stay cozy and check back later!"
     await query.edit_message_text(f"📣 <b>Updates:</b>\n\n{update_text}", parse_mode="HTML")
 
 # New callback for returning to main menu
