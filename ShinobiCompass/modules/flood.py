@@ -54,12 +54,7 @@ def flood_control(func):
             if timestamp >= current_time - timedelta(seconds=SPAM_TIME_FRAME)
         ]
 
-        # Enforce cooldown
-        if recent_activity and (current_time - recent_activity[-1]).total_seconds() < COOLDOWN:
-            await update.message.reply_text(
-                f"⏳ Please wait {COOLDOWN} seconds between commands."
-            )
-            return  # Block further commands within the cooldown period
+          # Block further commands within the cooldown period
 
         # Update activity log
         recent_activity.append(current_time)
