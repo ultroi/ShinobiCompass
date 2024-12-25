@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from functools import wraps
+from ShinobiCompass.database import db
 
 # Constants
 COOLDOWN = 3  # Minimum time between commands (in seconds)
