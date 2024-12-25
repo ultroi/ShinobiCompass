@@ -41,7 +41,6 @@ UPDATE_MESSAGE = None
 async def start(update: Update, context: CallbackContext) -> None:
     global UPDATE_MESSAGE
     user = update.effective_user
-    # Use a default message if UPDATE_MESSAGE is None
     update_text = UPDATE_MESSAGE or "No Updates Available"
     
     buttons = [
@@ -51,103 +50,88 @@ async def start(update: Update, context: CallbackContext) -> None:
     reply_markup = InlineKeyboardMarkup(buttons)
     
     welcome_message = (
-        f"👋 <b>Welcome, {user.first_name}!</b>\n\n"
-        "🤖 <b>This is your assistant bot for Naruto Game Bot!</b>\n"
-        "I can help you analyze black market deals, manage tasks, and much more!\n\n"
-        "⚡ <b>Features:</b>\n"
-        "➡️ Black Market Analysis\n"
-        "➡️ Task Management\n"
-        "➡️ Inventory Tracking\n\n"
-        "🔧 Use the <b>Help</b> button below to learn more about the available commands and features.\n\n"
-        "📣 <b>Current Updates:</b>\n"
-        f"{update_text}"
-    )
+    f"❄️<b>Welcome, {user.first_name}!</b>❄️\n\n"
+    "⛄ <b>Your Assistant Bot for Naruto Game Bot is here to keep you warm this winter!</b>\n"
+    "Let me help you analyze black market deals, manage tasks, and much more as the cold breeze rolls in!\n\n"
+    "🌨️ <b>Winter Features:</b>\n"
+    "🔥 Black Market Analysis\n"
+    "🧣 Task Management\n"
+    "🧤 Inventory Tracking\n\n"
+    "☃️ <b>Current Updates:</b>\n"
+    f"{update_text}\n\n"
+    "❄️🎄Wishing you warmth, joy, and plenty of rewards this winter! 🎄❄️"
+)
     await update.message.reply_text(welcome_message, parse_mode="HTML", reply_markup=reply_markup)
 
+# Callback Query Handlers
 
-# Callback query handler for help menu
 async def help_callback_handler(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()
     
     if query.data == "help_bm_commands":
-        # Black Market Analysis Commands
-        buttons = [
-            [InlineKeyboardButton("➡️ Task Commands", callback_data="help_task_page_1")],
-        ]
+        buttons = [[InlineKeyboardButton("Task Commands", callback_data="help_task_page_1")]]
         reply_markup = InlineKeyboardMarkup(buttons)
         help_text = (
-            "📖 <b>Help: Black Market Analysis</b>\n\n"
-            "🛠 <b>Commands:</b>\n"
+            "❄️<b>Black Market Analysis</b>❄️\n\n"
+            "🛠️ <b>Commands:</b>\n"
             "1️⃣ <b>/bm</b> - Analyze a black market message by replying to it.\n"
             "2️⃣ Automatic detection of messages in group chats.\n\n"
-            "⚙️ <b>Features:</b>\n"
+            "🌨️ <b>Features:</b>\n"
             "- Analyze black market messages in real-time.\n"
             "- Identify profitable deals using pre-set pricing logic.\n"
             "- Generate detailed analysis reports directly in the chat.\n\n"
-            "Use the <b>➡️ Task Commands</b> button to explore Task Management features."
         )
         await query.edit_message_text(help_text, parse_mode="HTML", reply_markup=reply_markup)
 
     elif query.data == "help_task_page_1":
-        # Task Management Commands (Page 1)
         buttons = [
-            [InlineKeyboardButton("➡️ Page 2", callback_data="help_task_page_2")],
-            [InlineKeyboardButton("⬅️ BM Commands", callback_data="help_bm_commands")],
+            [InlineKeyboardButton("Inv Submission", callback_data="help_task_page_2")],
+            [InlineKeyboardButton("Black Market", callback_data="help_bm_commands")],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         help_text = (
-            "📖 <b>Help: Task Management (Page 1)</b>\n\n"
-            "🛠 <b>Admin Commands:</b>\n"
-            "1️⃣ <b>/task starttime-endtime <i>task description</i> (reward)</b>\n"
-            "   - Starts a new task for the current day with a unique name.\n"
-            "   - Ensure the reward format: <code>'coins', 'tokens', 'gems', or 'glory'</code>.\n"
-            "   - Valid only for tasks initiated on the same day.\n\n"
-            "2️⃣ <b>/end_task</b>\n"
-            "   - Ends the currently active task for the day.\n"
-            "   - Tasks not ended manually will expire automatically at midnight IST.\n\n"
-            "📌 <b>Details:</b>\n"
-            "- Tasks are tied to the <b>current day</b> and expire at <b>midnight IST</b>.\n"
-            "- Use meaningful task names to identify their purpose.\n\n"
-            "Use <b>➡️ Page 2</b> to learn about inventory submission and reward calculations."
+    "❄️<b>Task Management</b>❄️\n\n"
+    "🛠️ <b>Admin Commands (Only for Group):</b>\n\n"
+    "• <b>/task starttime-endtime <i>task description</i> (reward)</b>\n"
+    "  Create a new task for today with a specific name and reward format: <code>'coins', 'tokens', 'gems', or 'glory'</code>.\n\n"
+    "• <b>Ensure Reward must be in bracket</b> e.g: (2 gems/glory)\n"
+    "• <b>Ensure that the task command must be sent at least 1 minute before the task time</b>\n\n"
+    "• <b>/endtask</b> Used to end the current active task for the day.\n"
+    "• <b>/canceltask</b> Cancels the current active task before it ends.\n\n"
+    "📅 <b>Details:</b>\n"
+    "• Tasks expire at <b>midnight IST</b> Valid Time : 12:00am - 11:59pm.\n"
+    "• Use meaningful task names to easily track the task.\n"
         )
         await query.edit_message_text(help_text, parse_mode="HTML", reply_markup=reply_markup)
 
     elif query.data == "help_task_page_2":
-        # Task Management Commands (Page 2)
         buttons = [
-            [InlineKeyboardButton("⬅️ Page 1", callback_data="help_task_page_1")],
-            [InlineKeyboardButton("⬅️ BM Commands", callback_data="help_bm_commands")],
+            [InlineKeyboardButton("Admin Task", callback_data="help_task_page_1")],
+            [InlineKeyboardButton(" Back", callback_data="help_bm_commands")],
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         help_text = (
-            "📖 <b>Help: Task Management (Page 2)</b>\n\n"
-            "🛠 <b>Inventory Submission:</b>\n"
-            "3️⃣ <b>/finv task_id</b>\n"
-            "   - Submit your <b>starting inventory</b>.\n"
-            "   - Forward the inventory message from the Naruto bot in PM, then reply to the forwarded message.\n\n"
-            "4️⃣ <b>/linv task_id</b>\n"
-            "   - Submit your <b>ending inventory</b>.\n"
-            "   - Follow the same process as above. Can be done in PM or group chats.\n\n"
-            "🕒 <b>Time Validation:</b>\n"
-            "- Tasks are valid for the <b>current day</b> only (12:00am to 11:59pm).\n"
-            "- Both starting and ending inventories must be submitted within the same day/task time.\n\n"
-            "📊 <b>Reward Calculation:</b>\n"
-            "- Formula: <code>Reward = (linv - finv) * reward value</code>\n"
-            "- Example:\n"
-            "   <code>/task 9:00am-10:00pm Boost clan glory (2 gems/glory)</code>\n"
-            "   Reward Value: 2 | Starting Inventory: 1000 glory (finv) | Ending Inventory: 1500 glory (linv)\n"
-            "   <b>Reward: (1500 - 1000) * 2 = 1000</b>\n\n"
-            "Use <b>⬅️ Page 1</b> for general task commands."
+    "❄️<b>Task Management</b>❄️\n\n"
+    "🛠️ <b>Inventory Submission:</b>\n\n"
+    
+    "<b>In Group Chat:</b>\n"
+    "• <b>/finv</b>: To submit your starting inventory, reply to the latest inventory message and use the command.\n"
+    "• <b>/linv</b>: To submit your last inventory, reply to the latest inventory message and use the command.\n\n"
+    
+    "<b>In Private Chat:</b>\n"
+    "• <b>/finv <code>task_id</code></b>: To submit your starting inventory, copy the <b>task_id</b> from the task message and forward your starting inventory message from the Naruto bot. Then, use <code>/finv task_id</code>.\n"
+    "• <b>/linv <code>task_id</code></b>: To submit your ending inventory, copy the <b>task_id</b> from the task message and forward your ending inventory message. Then, use <code>/linv task_id</code>.\n\n"
+    
+    "📊 <b>Reward Calculation:</b>\n"
+    "• Formula: <code>(Ending Inventory - Starting Inventory) × Reward Value</code>\n\n"
         )
         await query.edit_message_text(help_text, parse_mode="HTML", reply_markup=reply_markup)
 
-# Callback query handler for Updates button
+# Updates Callback
 async def show_updates_callback(update: Update, context: CallbackContext) -> None:
     global UPDATE_MESSAGE
     query = update.callback_query
     await query.answer()
-    update_text = UPDATE_MESSAGE if UPDATE_MESSAGE else "No Updates Available"
+    update_text = UPDATE_MESSAGE or "❄️ No Updates Available. Stay cozy and check back later!"
     await query.edit_message_text(f"📣 <b>Updates:</b>\n\n{update_text}", parse_mode="HTML")
-
-
