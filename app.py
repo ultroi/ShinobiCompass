@@ -24,6 +24,7 @@ from ShinobiCompass.modules.task import (
     cancel_task,
 )
 from ShinobiCompass.modules.extra import xp_command, iseal_command
+from ShinobiCompass.modules.flood import floods, set_constants
 
 # Logging setup
 logging.basicConfig(
@@ -78,6 +79,9 @@ application.add_handler(CommandHandler("canceltask", cancel_task))
 
 application.add_handler(CommandHandler("xp", xp_command))
 application.add_handler(CommandHandler("iseal", iseal_command))
+
+application.add_handler(CommandHandler("floods", floods))
+application.add_handler(CommandHandler("set", set_constants))
 
 # Inventory submission handlers
 application.add_handler(CommandHandler("finv", lambda update, context: submit_inventory(update, context, "finv")))
