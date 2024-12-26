@@ -21,6 +21,7 @@ def save_info(func):
 
         # Check if user info already exists in the database to prevent duplicates
         user_data = users_collection.find_one({"user_id": user_id})
+        
         if not user_data:
             # New user: save basic info to the database
             user_data = {
@@ -41,6 +42,14 @@ def save_info(func):
 
         # Check if the user has started the bot via PM
         if not user_data["has_started"]:
+            # Check if the user is in a group and hasn't started via PM
+            if update.message.chat.type != 'private':  # The message is not from PM
+                await update.message.reply_text(
+                    "Please start the bot via PM for future updates. Click below to start:\n"
+                    "t.me/ShinobiCompassBot",
+                )
+                return  # Stop further command execution until the user starts the bot via PM
+
             # Create an inline button with a deep link to trigger bot start
             button = InlineKeyboardButton("Start Bot", url=f"t.me/ShinobiCompassBot?start={user_id}")
             keyboard = InlineKeyboardMarkup([[button]])
@@ -49,12 +58,14 @@ def save_info(func):
                 "Hello! Please start the bot via PM for future updates.",
                 reply_markup=keyboard
             )
+
         else:
             # User has already started the bot, do not send the reminder message
             pass
         
         # Proceed to the original function (command or message)
         await func(update, context)
+        
     return wrapper
 
 # Group Info Capture
