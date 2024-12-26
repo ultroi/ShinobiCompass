@@ -5,7 +5,7 @@ from telegram.ext import (
     CallbackContext,
     filters,
 )
-from ShinobiCompass.modules.flood import flood_control
+#from ShinobiCompass.modules.flood import flood_control
 
 # Configure logging
 logging.basicConfig(
@@ -166,7 +166,6 @@ def analyze_message(message):
 
 
 # Command: /bm (manual analysis)
-@flood_control
 async def bm(update: Update, _: CallbackContext) -> None:
     if update.message.reply_to_message:
         # Get the replied message content
