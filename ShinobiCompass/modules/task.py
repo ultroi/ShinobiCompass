@@ -233,12 +233,19 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
     tasks_collection.delete_one({"_id": task['_id']})
 
 
-async def submit_inventory(update: Update, context: CallbackContext, inventory_type: str) -> None:
-    context = context  # To avoid unused variable warning
+async def submit_inventory(update: Update, context: CallbackContext) -> None:
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
     now_ist = datetime.now(IST)
     message_text = update.message.text
+
+    # Extract the inventory type and task ID from the message
+    match = re.match(r"/(finv|linv) (\S+)", message_text)
+    if not match:
+        await update.message.reply_text("Invalid command format. Use /finv unique_id or /linv unique_id.")
+        return
+
+    inventory_type, task_id = match.groups()  # Extract inventory type (finv or linv) and task ID
 
     # Check if the command is used in a private message
     if update.effective_chat.type == 'private':
@@ -248,14 +255,6 @@ async def submit_inventory(update: Update, context: CallbackContext, inventory_t
             return
 
         inventory_message = update.message.reply_to_message.text
-
-        # Extract the unique task ID from the command
-        match = re.match(r"/(finv|linv) (\S+)", message_text)
-        if not match:
-            await update.message.reply_text("Invalid command format. Use /finv unique_id or /linv unique_id.")
-            return
-
-        inventory_type, task_id = match.groups()
 
         # Find the task by unique ID
         task = tasks_collection.find_one({"task_id": task_id})
@@ -369,7 +368,8 @@ async def submit_inventory(update: Update, context: CallbackContext, inventory_t
         return
 
     else:
-        await update.message.reply_text("Invalid inventory type. Use 'finv' for starting or 'linv' for ending inventory.")
+        await update.message.reply_text("Invalid inventory type. Use 'finv' for starting or 'linv' for ending inventory.") 
+
 
 # Show the leaderboard for the task
 async def taskresult(chat_id: int, context: CallbackContext) -> None:
