@@ -232,7 +232,7 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
     # Delete the task from the database
     tasks_collection.delete_one({"_id": task['_id']})
 
-@save_info
+
 async def submit_inventory(update: Update, context: CallbackContext, inventory_type: str) -> None:
     context = context  # To avoid unused variable warning
     user_id = update.effective_user.id
