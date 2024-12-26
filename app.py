@@ -84,8 +84,8 @@ application.add_handler(CommandHandler("floods", floods))
 application.add_handler(CommandHandler("set", set_constants))
 
 # Inventory submission handlers
-application.add_handler(CommandHandler("finv", lambda update, context: submit_inventory(update, context, "finv")))
-application.add_handler(CommandHandler("linv", lambda update, context: submit_inventory(update, context, "linv")))
+application.add_handler(CommandHandler("finv", submit_inventory, pass_args=True))
+application.add_handler(CommandHandler("linv", submit_inventory, pass_args=True))
 application.add_handler(CommandHandler("taskresult", taskresult))
 application.add_handler(CommandHandler("bm", bm))
 application.add_handler(CommandHandler("addsudo", addsudo))
