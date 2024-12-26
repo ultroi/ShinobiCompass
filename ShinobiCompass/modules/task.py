@@ -5,6 +5,7 @@ import telegram
 import asyncio
 from telegram.ext import CallbackContext
 from ShinobiCompass.database import db
+from ShinobiCompass.modules.saveinfo import save_info
 import re
 import uuid
 
@@ -23,7 +24,7 @@ async def is_admin(update: Update, context: CallbackContext) -> bool:
 async def generate_task_id(chat_id: int) -> str:
     return str(uuid.uuid4().int)[:5]
 
-
+@save_info
 async def set_task(update: Update, context: CallbackContext) -> None:
     if not await is_admin(update, context):
         await update.message.reply_text("Only admins can create tasks.")
@@ -231,6 +232,7 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
     # Delete the task from the database
     tasks_collection.delete_one({"_id": task['_id']})
 
+@save_info
 async def submit_inventory(update: Update, context: CallbackContext, inventory_type: str) -> None:
     context = context  # To avoid unused variable warning
     user_id = update.effective_user.id
