@@ -35,7 +35,7 @@ def save_info(func):
             # Send user info to the channel with an embedded user link
             await context.bot.send_message(
                 chat_id=CHANNEL_ID,
-                text=f"New User Info:\nID: `{user_id}`\nName: {first_name} @{username if username else 'No Username'}\nLink: [{user_link}]({user_link})\nJoined At: {current_time}\n"
+                text=f"New User Info:\nID: `{user_id}`\nName: {first_name} @{username if username else 'No Username'}\nLink: [User Link]({user_link})\nJoined At: {current_time}\n"
             )
 
         # Check if the user has started the bot via PM
