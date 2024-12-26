@@ -1,5 +1,5 @@
 from telegram import Update
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Filters
+from telegram.ext import CallbackContext
 from functools import wraps
 from ShinobiCompass.database import db
 from datetime import datetime
