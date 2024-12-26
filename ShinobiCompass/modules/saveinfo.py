@@ -1,4 +1,5 @@
 from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 from functools import wraps
 from ShinobiCompass.database import db
