@@ -9,7 +9,7 @@ users_collection = db["users"]  # Collection to store user info
 group_info_collection = db["groups"]  # Collection to store group info
 CHANNEL_ID = -1002254557222  # Channel ID where you want to send the info
 
-def save_user_info(func):
+def save_info(func):
     @wraps(func)
     async def wrapper(update, context):
         user_id = update.effective_user.id
