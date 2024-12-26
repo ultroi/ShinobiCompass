@@ -9,9 +9,9 @@ users_collection = db["users"]  # Collection to store user info
 group_info_collection = db["groups"]  # Collection to store group info
 CHANNEL_ID = -1002254557222  # Channel ID where you want to send the info
 
-def save_info(func):
+def save_user_info(func):
     @wraps(func)
-    async def wrapper(update: Update, context: CallbackContext):
+    async def wrapper(update, context):
         user_id = update.effective_user.id
         username = update.effective_user.username
         first_name = update.effective_user.first_name
@@ -32,22 +32,29 @@ def save_info(func):
             }
             users_collection.insert_one(user_data)
 
-            # Send user info to the channel
+            # Send user info to the channel with an embedded user link
             await context.bot.send_message(
                 chat_id=CHANNEL_ID,
-                text=f"New User Info:\nID: {user_id}\nName: {first_name} {username}\nLink: {user_link}\nJoined At: {current_time}\n"
+                text=f"New User Info:\nID: `{user_id}`\nName: {first_name} @{username if username else 'No Username'}\nLink: [{user_link}]({user_link})\nJoined At: {current_time}\n"
             )
 
         # Check if the user has started the bot via PM
         if not user_data["has_started"]:
+            # Create an inline button with a deep link to trigger bot start
+            button = InlineKeyboardButton("Start Bot", url=f"t.me/ShinobiCompassBot?start={user_id}")
+            keyboard = InlineKeyboardMarkup([[button]])
+
             await update.message.reply_text(
-                "Hello! Please start the bot via PM for future updates.\nClick here: t.me/YOUR_BOT_USERNAME"
+                "Hello! Please start the bot via PM for future updates.",
+                reply_markup=keyboard
             )
+        else:
+            # User has already started the bot, do not send the reminder message
+            pass
         
         # Proceed to the original function (command or message)
         await func(update, context)
     return wrapper
-
 
 # Group Info Capture
 def log_group_info(update: Update, context: CallbackContext):
