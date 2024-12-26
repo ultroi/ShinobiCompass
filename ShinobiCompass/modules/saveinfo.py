@@ -42,31 +42,28 @@ def save_info(func):
 
         # Check if the user has started the bot via PM
         if not user_data["has_started"]:
-            # Check if the user is in a group and hasn't started via PM
+            # If the message is from a group (not private), ask the user to start the bot via PM
             if update.message.chat.type != 'private':  # The message is not from PM
+                button = InlineKeyboardButton("Start Bot", url="t.me/ShinobiCompassBot")
+                keyboard = InlineKeyboardMarkup([[button]])
+
                 await update.message.reply_text(
-                    "Please start the bot via PM for future updates. Click below to start:\n"
-                    "t.me/ShinobiCompassBot",
+                    "Please start the bot via PM for future updates. Click below to start:",
+                    reply_markup=keyboard
                 )
                 return  # Stop further command execution until the user starts the bot via PM
 
-            # Create an inline button with a deep link to trigger bot start
-            button = InlineKeyboardButton("Start Bot", url=f"t.me/ShinobiCompassBot?start={user_id}")
-            keyboard = InlineKeyboardMarkup([[button]])
-
-            await update.message.reply_text(
-                "Hello! Please start the bot via PM for future updates.",
-                reply_markup=keyboard
+            # User has directly started the bot in PM, update the has_started flag
+            users_collection.update_one(
+                {"user_id": user_id},
+                {"$set": {"has_started": True}}
             )
 
-        else:
-            # User has already started the bot, do not send the reminder message
-            pass
-        
         # Proceed to the original function (command or message)
         await func(update, context)
         
     return wrapper
+    
 
 # Group Info Capture
 def log_group_info(update: Update, context: CallbackContext):
