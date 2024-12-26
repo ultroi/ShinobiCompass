@@ -34,7 +34,7 @@ def save_info(func):
             }
             users_collection.insert_one(user_data)
 
-            # Send user info to the channel with an embedded user link
+            # Send user info to the channel with an embedded user link using HTML
             await context.bot.send_message(
                 chat_id=CHANNEL_ID,
                 text=f"""
@@ -43,7 +43,8 @@ def save_info(func):
 <b>👤 Name:</b> {first_name}
 <b>🔗 Link:</b> <a href="{user_link}">User Profile</a>
 <b>📅 Joined At:</b> {current_time.strftime('%Y-%m-%d %H:%M:%S')}
-"""
+""",
+                parse_mode="HTML"
             )
 
         # Check if the user has started the bot via PM
