@@ -108,7 +108,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
 
     # Check if the inventory message was sent within the last minute
     time_diff = current_time - message_time
-    if time_diff > timedelta(minutes=1):
+    if time_diff < timedelta(minutes=1):
         await update.message.reply_text("⚠️ The inventory message is older than 1 minute. Please resend your inventory message.")
         return
 
