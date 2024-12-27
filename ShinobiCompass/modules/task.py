@@ -460,7 +460,6 @@ async def clear_tasks(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text("All tasks have been cleared.")
     await context.bot.unpin_all_chat_messages(chat_id)
 
-
 @require_verification
 async def end_task(update: Update, context: CallbackContext) -> None:
     # Check if the user is an admin
@@ -469,7 +468,7 @@ async def end_task(update: Update, context: CallbackContext) -> None:
         return
 
     chat_id = update.effective_chat.id
-    
+
     # Fetch the active task for the chat
     task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$gt": datetime.now(IST)}})
     
@@ -483,8 +482,8 @@ async def end_task(update: Update, context: CallbackContext) -> None:
         {"$set": {"end_time": datetime.now(IST)}}  # Set the task's end time to the current time
     )
 
-    # Immediately call the delete_task_data function with the correct `task` dictionary
-    await delete_task_data(task, chat_id, context)
+    # Call delete_task_data with the complete task dictionary
+    await delete_task_data(context, task, chat_id)
 
 
 
