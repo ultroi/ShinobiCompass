@@ -84,8 +84,8 @@ application.add_handler(CommandHandler("iseal", iseal_command))
 application.add_handler(CommandHandler("floods", floods))
 application.add_handler(CommandHandler("set", set_constants))
 
-application.add_handler(Commandhandler("verify", verify_user))
-application.add_handler(Commandhandler("auth", auth))
+application.add_handler(CommandHandler("verify", verify_user))
+application.add_handler(CommandHandler("auth", auth))
 
 # Inventory submission handlers
 application.add_handler(CommandHandler("finv", submit_inventory))
