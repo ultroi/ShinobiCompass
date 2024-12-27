@@ -75,7 +75,7 @@ async def calculate_xp_info(inventory_text):
 async def xp_command(update: Update, context: CallbackContext):
     # Check verification status
     user_id = update.effective_user.id
-    user = await db.users.find_one({"id": user_id})  # Replace with actual DB call
+    user = db.users.find_one({"id": user_id})  # Replace with actual DB call
 
     if not user:
         await update.message.reply_text("❌ User data not found. Please verify your account.")
@@ -106,7 +106,7 @@ async def xp_command(update: Update, context: CallbackContext):
 async def iseal_command(update: Update, context: CallbackContext):
     # Check verification status
     user_id = update.effective_user.id
-    user = await db.users.find_one({"id": user_id})  # Replace with actual DB call
+    user = db.users.find_one({"id": user_id})  # Replace with actual DB call
 
     if not user:
         await update.message.reply_text("❌ User data not found. Please verify your account.")
