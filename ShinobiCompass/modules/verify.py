@@ -29,6 +29,7 @@ async def get_users_collection():
         return None
 
 # Function to check if the user is verified
+# Function to check if the user is verified
 async def is_verified(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     logger.info(f"Checking verification for user ID: {user_id}")
