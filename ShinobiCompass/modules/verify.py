@@ -69,7 +69,7 @@ async def verify_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
 
     # Check if the database connection is initialized
-    if not db:
+    if db is None:
         await update.message.reply_text("⚠️ Database connection is not initialized.")
         return
 
