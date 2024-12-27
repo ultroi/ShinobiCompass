@@ -210,28 +210,19 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
         await asyncio.sleep((task_end_time - now_ist).total_seconds())
         now_ist = datetime.now(IST)  # Get current time again after the wait
 
-    # Generate leaderboard
-    leaderboard = []
-    for key, value in task.items():
-        if key.startswith("finv_"):
-            user_id = int(key.split("_")[1])
-            finv = value
-            linv = task.get(f"linv_{user_id}")
-            if linv is not None:
-                leaderboard.append((user_id, linv - finv))
+    # Call the taskresult function to generate and show the leaderboard
+    result_message = await taskresult(chat_id, context)
 
-    # If there is no participation, edit the task message and pin it
-    if not leaderboard:
-        await context.bot.send_message(chat_id, "No users participated in the event.")
-        
-        # Edit task message and pin it since there's no participation
-        await editing_task_message(context, task, chat_id, pin=True)
+    # Edit the task message and pin it if there was no participation
+    if result_message == "No users participated in the event.":
+        await edit_task_message(context, task, chat_id, pin=True)
     else:
-        # If there is participation, edit the task message but don't pin it
-        await editing_task_message(context, task, chat_id, pin=False)
-        
-        # Call taskresult function to show the leaderboard and pin it
-        await taskresult(chat_id, context)
+        # If there was participation, edit the task message but don't pin it
+        await edit_task_message(context, task, chat_id, pin=False)
+
+        # Pin the leaderboard message after it is shown
+        # (Assuming taskresult handles generating and sending the leaderboard message)
+        await context.bot.pin_chat_message(chat_id, message_id=result_message.message_id)
 
     # Unpin the task message (if it exists)
     if 'message_id' in task:
@@ -259,7 +250,7 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
 
     # Check if the command is properly formatted
     if not message_text.startswith('/finv') and not message_text.startswith('/linv'):
-        await update.message.reply_text("Invalid Format: Use /finv (reply to inventory message) for startin g inventory or /linv for ending inventory.")
+        await update.message.reply_text("Invalid Format: Use /finv(reply to inventory message) for startin g inventory or /linv for ending inventory.")
         return
 
     # Extract inventory type and task ID (if provided)
