@@ -241,6 +241,7 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
 
     # Extract the inventory type and task ID from the message
     match = re.match(r"/(finv|linv)(?:@[\w\d_]+)? (\S+)", message_text)
+
     if not match:
         await update.message.reply_text("Invalid Format : Use /finv (reply to inv message) For starting inventory \n Use /linv reply to ending inventory ")
         return
@@ -250,7 +251,7 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
     # Find the task by task_id
     task = tasks_collection.find_one({"task_id": task_id})
     if not task:
-        await update.message.reply_text("Invalid task ID.")
+        await update.message.reply_text("Invalid task ID. \n Use /finv task_id || /linv task_id \n Task id is given in Task message in the group !!")
         return
 
     # Check if the command is used in a private message
