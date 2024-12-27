@@ -58,18 +58,18 @@ def require_verification(func):
         return await func(update, context, *args, **kwargs)
     return wrapper
 
-async def verify_user(update: Update, context: CallbackContext) -> None:
+async def verify_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Verify user based on inventory message."""
     
-    # Check if the message is coming from a group chat
+    # Check if the message is coming from a private message
     if update.message.chat.type != 'private':
         await update.message.reply_text(
             "⚠️ Verification only in a private message (PM) to me. I cannot verify users in group chats."
         )
         return
 
-    # Check if database connection is initialized
-    if db is None:
+    # Check if the database connection is initialized
+    if not db:
         await update.message.reply_text("⚠️ Database connection is not initialized.")
         return
 
@@ -120,7 +120,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         clan_auth = await db.clans.find_one({"name": clan, "authorized": True})
         is_owner = await is_owner_or_sudo(update)
 
-        # Update the user's data in the database
+        # Update the user's data in the database (ensure this is async if using Motor)
         await db.users.update_one(
             {"id": update.effective_user.id},
             {
@@ -134,7 +134,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
             upsert=True,
         )
 
-        # Retrieve user data from the database
+        # Retrieve user data from the database (async if using Motor)
         user = await db.users.find_one({"id": update.effective_user.id})
 
         # Generate a formatted message
@@ -165,7 +165,6 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
 
     except Exception as e:
         await update.message.reply_text(f"⚠️ An error occurred while verifying the user: {str(e)}")
-
 
 #auth the coan and user
 async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
