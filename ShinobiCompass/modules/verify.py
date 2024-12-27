@@ -46,10 +46,20 @@ def require_verification(func):
 
 async def verify_user(update: Update, context: CallbackContext) -> None:
     """Verify user based on inventory message."""
+    
+    # Check if the message is coming from a group chat
+    if update.message.chat.type != 'private':
+        await update.message.reply_text(
+            "⚠️ Verification only in a private message (PM) to me. I cannot verify users in group chats."
+        )
+        return
+
+    # Check if database connection is initialized
     if not db:
         await update.message.reply_text("⚠️ Database connection is not initialized.")
         return
 
+    # Check if the message is a reply to an inventory message
     if not update.message.reply_to_message:
         await update.message.reply_text("⚠️ Please reply to your inventory message.")
         return
@@ -141,6 +151,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
 
     except Exception as e:
         await update.message.reply_text(f"⚠️ An error occurred while verifying the user: {str(e)}")
+
 
 #auth the coan and user
 async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
