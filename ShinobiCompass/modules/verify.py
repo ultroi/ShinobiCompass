@@ -127,7 +127,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         is_owner = await is_owner_or_sudo(update)
 
         # Update the user's data in the database (ensure this is async if using Motor)
-        await db.users.update_one(
+        db.users.update_one(
             {"id": update.effective_user.id},
             {
                 "$set": {
@@ -142,7 +142,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         )
 
         # Retrieve user data from the database
-        user = await db.users.find_one({"id": update.effective_user.id})
+        user = db.users.find_one({"id": update.effective_user.id})
 
         # Generate a well-formatted message
         user_link = f"tg://user?id={update.effective_user.id}"
@@ -203,7 +203,6 @@ async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         db.clans.update_one({"name": clan_name}, {"$set": {"authorized": True}}, upsert=True)
         await update.message.reply_text(f"✅ Clan '{clan_name}' has been authorized.")
 
-# Function to display user info
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Display information about a user."""
     if not await is_owner_or_sudo(update):
@@ -215,19 +214,24 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     try:
-        user_id = int(context.args[0])
-        user = db.users.find_one({"id": user_id})
+        user_id = int(context.args[0])  # Convert argument to integer for user ID
+        user = db.users.find_one({"id": user_id})  # Ensure this is async
         if not user:
-            await update.message.reply_text("⚠️ No user found with the given ID.")
+            await update.message.reply_text(f"⚠️ No user found with ID {user_id}.")
             return
 
+        # Build the user info message with HTML formatting
         user_info = (
             f"👤 <b>Name:</b> {user['name']}\n"
-            f"🆔 <b>ID:</b> {user['id']}\n"
+            f"🆔 <b>ID:</b> <code>{user['id']}</code>\n"
             f"🏯 <b>Clan:</b> {user['clan']}\n"
             f"🎚️ <b>Level:</b> {user['level']}\n"
             f"✅ <b>Verified:</b> {'Yes' if user['verified'] else 'No'}"
         )
+
+        # Send the formatted user info back to the chat
         await update.message.reply_text(user_info, parse_mode="HTML")
+
     except ValueError:
-        await update.message.reply_text("⚠️ Invalid user ID.")
+        await update.message.reply_text("⚠️ Invalid user ID provided. Please ensure the ID is a number.")
+
