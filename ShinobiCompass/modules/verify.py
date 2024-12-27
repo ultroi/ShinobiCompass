@@ -5,6 +5,7 @@ from ShinobiCompass.modules.sudo import is_owner_or_sudo
 from functools import wraps
 import logging
 import re
+from datetime import datetime
 
 
 logger = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ def require_verification(func):
 
 
 # Function to verify the user
-async def verify_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def verify_user(update: Update, context: CallbackContext) -> None:
     """Verify user based on inventory message."""
     
     # Check if the message is coming from a private message
@@ -118,12 +119,15 @@ async def verify_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         level = int(level_match.group(1))
         clan = clan_match.group(1).strip()
 
-        # Check clan authorization (synchronous query)
+        # Get the current time
+        current_time = datetime.now()
+
+        # Check clan authorization
         clan_auth = db.clans.find_one({"name": clan, "authorized": True})
         is_owner = await is_owner_or_sudo(update)
 
-        # Update the user's data in the database (synchronous pymongo operation)
-        db.users.update_one(
+        # Update the user's data in the database (ensure this is async if using Motor)
+        await db.users.update_one(
             {"id": update.effective_user.id},
             {
                 "$set": {
@@ -131,20 +135,24 @@ async def verify_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                     "clan": clan,
                     "level": level,
                     "verified": is_owner or clan_auth is not None,
+                    "joined_at": current_time.strftime('%Y-%m-%d %H:%M:%S')
                 }
             },
             upsert=True,
         )
 
-        # Retrieve user data from the database (synchronous pymongo operation)
-        user = db.users.find_one({"id": update.effective_user.id})
+        # Retrieve user data from the database
+        user = await db.users.find_one({"id": update.effective_user.id})
 
-        # Generate a formatted message
+        # Generate a well-formatted message
+        user_link = f"tg://user?id={update.effective_user.id}"
         message = (
-            f"👤 <b>Name:</b> {user['name']}\n"
-            f"🆔 <b>ID:</b> {user['id']}\n"
-            f"🏯 <b>Clan:</b> {user['clan']}\n"
-            f"🎚️ <b>Level:</b> {user['level']}\n"
+            f"<b>🌟 New User 🌟</b>\n\n"
+            f"<b>👤 Name:</b> {user['name']}\n"
+            f"<b>🆔 ID:</b> <code>{user['id']}</code>\n"
+            f"<b>🏯 Clan:</b> {user['clan']}\n"
+            f"<b>🔗 Link:</b> <a href='{user_link}'>User Profile</a>\n"
+            f"<b>📅 Joined At:</b> {user['joined_at']}\n"
             f"✅ <b>Verified:</b> {'Yes' if user['verified'] else 'No'}"
         )
 
