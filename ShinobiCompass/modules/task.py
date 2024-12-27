@@ -197,7 +197,6 @@ async def edit_task_message(context: CallbackContext, chat_id: int, message_id: 
         parse_mode=telegram.constants.ParseMode.HTML
     )
 
-
 async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
     # Get the current time and task end time
     now_ist = datetime.now(IST)
@@ -215,13 +214,19 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
             if linv is not None:
                 leaderboard.append((user_id, linv - finv))
 
+    # If there is no participation, edit the task message and pin it
     if not leaderboard:
         await context.bot.send_message(chat_id, "No users participated in the event.")
-        # Skip unpinning the task message if no participation
+        
+        # Edit task message and pin it since there's no participation
+        await editing_task_message(context, task, chat_id, pin=True)
         return
-
-    # Show the leaderboard immediately after task ends
-    await taskresult(chat_id, context)
+    else:
+        # If there is participation, edit the task message but don't pin it
+        await editing_task_message(context, task, chat_id, pin=False)
+        
+        # Call taskresult function to show the leaderboard and pin it
+        await taskresult(chat_id, context)
 
     # Unpin the task message (if it exists)
     if 'message_id' in task:
@@ -238,6 +243,7 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
 
     # Delete the task from the database
     tasks_collection.delete_one({"_id": task['_id']})
+
 
 
 @require_verification
