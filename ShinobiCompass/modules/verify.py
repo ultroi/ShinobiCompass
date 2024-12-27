@@ -5,7 +5,7 @@ from ShinobiCompass.modules.sudo import is_owner_or_sudo
 from functools import wraps
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 logger = logging.getLogger(__name__)
@@ -95,6 +95,15 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
     if update.message.reply_to_message.forward_from and update.message.reply_to_message.forward_from.id != 5416991774:
         await update.message.reply_text("⚠️ The forwarded inventory message must come from user ID 5416991774.")
         return
+
+    # Check if the inventory message was sent within the last minute
+        message_time = update.message.reply_to_message.date
+        current_time = datetime.now()
+        time_diff = current_time - message_time
+
+        if time_diff > timedelta(minutes=1):
+            await update.message.reply_text("⚠️ The inventory message is older than 1 minute. Please resend your inventory message.")
+            return
 
     try:
         # Extract user ID from inventory message
