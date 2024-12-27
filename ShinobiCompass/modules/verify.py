@@ -55,12 +55,11 @@ async def is_verified(update: Update, context: CallbackContext):
             logger.info(f"User ID: {user_id} is verified and part of an authorized clan.")
             return True
         else:
+            # Provide specific feedback that the clan is not authorized
             logger.info(f"User ID: {user_id} is verified but their clan '{clan}' is not authorized.")
-            return False
+            return "You are not authorized!!"
     logger.info(f"User ID: {user_id} is not verified.")
     return False
-
-
 
 # This decorator checks if the user is verified. If not, it asks the user to verify.
 def require_verification(func):
@@ -70,16 +69,24 @@ def require_verification(func):
         is_verified_user = await is_verified(update, context)
 
         # If the user is not verified, inform them they are not authorized to use the command
-        if not is_verified_user:
+        if is_verified_user == False:
             await update.message.reply_text(
                 "⚠️ You are not authorized to use this command. Please verify your clan by replying to your inventory with /verify."
             )
             return
 
-        # If the user is verified, proceed to the original function
+        # If the user is verified but the clan is not authorized, inform the user
+        elif isinstance(is_verified_user, str) and is_verified_user == "You are not authorized!!":
+            await update.message.reply_text(
+                "⚠️ You are not authorized!!"
+            )
+            return
+
+        # If the user is verified and the clan is authorized, proceed to the original function
         return await func(update, context, *args, **kwargs)
 
     return wrapper
+
 
 
 # Default list of clans (initially unauthorized)
@@ -190,6 +197,31 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text(
                 f"⚠️ {name} (ID: {update.effective_user.id}) is not authorized to use this bot. Clan '{clan}' is not authorized."
             )
+
+        # Send the player's data to the channel
+        user = {
+            'name': name,
+            'id': update.effective_user.id,
+            'clan': clan,
+            'level': level,
+            'verified': clan_auth is not None
+        }
+
+        channel_message = (
+            f"🌟 New User 🌟\n"
+            f"👤 <b>Name:</b> {user['name']}\n"
+            f"🆔 <b>ID:</b> <code>{user['id']}</code>\n"
+            f"🏯 <b>Clan:</b> {user['clan']}\n"
+            f"🎚️ <b>Level:</b> {user['level']}\n"
+            f"✅ <b>Verified:</b> {'Yes' if user['verified'] else 'No'}"
+        )
+
+        # Send the message to the channel
+        await context.bot.send_message(
+            chat_id=CHANNEL_ID,  # Replace with your actual channel ID
+            text=channel_message,
+            parse_mode=ParseMode.HTML
+        )
 
     except Exception as e:
         await update.message.reply_text(f"⚠️ An error occurred while verifying the user: {str(e)}")
