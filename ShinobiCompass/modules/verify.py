@@ -57,9 +57,10 @@ def require_verification(func):
         # Check if the user is verified (using asyncio to run async DB operation)
         is_verified_user = await is_verified(update, context)
 
+        # If the user is not verified, inform them they are not authorized to use the command
         if not is_verified_user:
             await update.message.reply_text(
-                "⚠️ Clan Verification Needed: Please send your inventory reply to /verify."
+                "⚠️ You are not authorized to use this command. Please verify your clan by replying to your inventory with /verify."
             )
             return
 
