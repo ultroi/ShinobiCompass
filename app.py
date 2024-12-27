@@ -23,7 +23,7 @@ from ShinobiCompass.modules.task import (
     taskresult,
     cancel_task,
 )
-from ShinobiCompass.modules.extra import xp_command, iseal_command, calculate_conversion
+from ShinobiCompass.modules.extra import xp_command, iseal_command, calc
 from ShinobiCompass.modules.flood import floods, set_constants
 from ShinobiCompass.modules.verify import verify_user, auth
 
@@ -87,7 +87,7 @@ application.add_handler(CommandHandler("set", set_constants))
 application.add_handler(CommandHandler("verify", verify_user))
 application.add_handler(CommandHandler("auth", auth))
 
-application.add_handler(CommandHandler("convert", calculate_conversion))
+application.add_handler(CommandHandler("convert", calc))
 
 # Inventory submission handlers
 application.add_handler(CommandHandler("finv", submit_inventory))
