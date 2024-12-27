@@ -25,6 +25,7 @@ from ShinobiCompass.modules.task import (
 )
 from ShinobiCompass.modules.extra import xp_command, iseal_command
 from ShinobiCompass.modules.flood import floods, set_constants
+from ShinobiCompass.modules.verify import verify_user, auth
 
 # Logging setup
 logging.basicConfig(
@@ -82,6 +83,9 @@ application.add_handler(CommandHandler("iseal", iseal_command))
 
 application.add_handler(CommandHandler("floods", floods))
 application.add_handler(CommandHandler("set", set_constants))
+
+application.add_handler(Commandhandler("verify", verify_user))
+application.add_handler(Commandhandler("auth", auth))
 
 # Inventory submission handlers
 application.add_handler(CommandHandler("finv", submit_inventory))
