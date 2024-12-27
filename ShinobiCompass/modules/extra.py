@@ -122,79 +122,106 @@ async def iseal_command(update: Update, context: CallbackContext):
     await update.message.reply_text(response, parse_mode="HTML")  # Awaiting reply_text here with HTML parse mode
 
 
-CONVERSION_RATES = {
-    "gem_to_coin": 2000,     # 1 Gem = 2000 Coins
-    "token_to_gem": 20,      # 1 Token = 20 Gems
-    "stock_to_token": 15,    # 1 Stock = 15 Tokens
-    "stock_to_gem": 300      # 1 Stock = 300 Gems
-}
+# Conversion Constants
+COINS_TO_GEMS = 2000  # 1 Gem = 2000 Coins
+TOKENS_TO_GEMS = 20  # 1 Token = 20 Gems
+STOCKS_TO_TOKENS = 15  # 1 Stock = 15 Tokens
+STOCKS_TO_GEMS = 300  # 1 Stock = 300 Gems
+COINS_TO_STOCK = 600000  # 1 Stock = 600,000 Coins
 
-async def calculate_conversion(update: Update, context: CallbackContext) -> None:
+# Conversion Functions
+def coins_to_gems(coins: int) -> int:
+    return coins // COINS_TO_GEMS
+
+def coins_to_tokens(coins: int) -> int:
+    gems = coins_to_gems(coins)
+    return gems // TOKENS_TO_GEMS
+
+def coins_to_stocks(coins: int) -> float:
+    return coins / COINS_TO_STOCK
+
+def gems_to_coins(gems: int) -> int:
+    return gems * COINS_TO_GEMS
+
+def gems_to_tokens(gems: int) -> int:
+    return gems // TOKENS_TO_GEMS
+
+def gems_to_stocks(gems: int) -> float:
+    return gems / STOCKS_TO_GEMS
+
+def tokens_to_gems(tokens: int) -> int:
+    return tokens * TOKENS_TO_GEMS
+
+def tokens_to_coins(tokens: int) -> int:
+    gems = tokens_to_gems(tokens)
+    return gems * COINS_TO_GEMS
+
+def tokens_to_stocks(tokens: int) -> float:
+    return tokens / STOCKS_TO_TOKENS
+
+# Command to handle calculations
+async def calc(update: Update, context: CallbackContext) -> None:
+    # Parse the input command
+    if len(context.args) != 2:
+        await update.message.reply_text(
+            "Usage: /calc <amount> <from_unit>-<to_unit>\n"
+            "Example: /calc 100 coins-tokens"
+        )
+        return
+
+    amount_str, conversion_type = context.args
     try:
-        # Parse user input
-        args = context.args
-        if len(args) != 2 or '-' not in args[1]:
-            await update.message.reply_text(
-                "Usage: /convert <amount> <from-to>\n"
-                "Example: /convert 2000 coins-gems"
-            )
-            return
-
-        amount = float(args[0])
-        conversion = args[1].lower().split('-')
-        if len(conversion) != 2:
-            await update.message.reply_text("Invalid conversion format. Use <from-to> (e.g., coins-gems).")
-            return
-
-        from_unit, to_unit = conversion
-
-        # Conversion logic
-        if from_unit == "coins" and to_unit == "gems":
-            result = amount / CONVERSION_RATES["gem_to_coin"]
-        elif from_unit == "coins" and to_unit == "tokens":
-            # Coins → Gems → Tokens
-            gems = amount / CONVERSION_RATES["gem_to_coin"]
-            result = gems / CONVERSION_RATES["token_to_gem"]
-        elif from_unit == "coins" and to_unit == "stocks":
-            # Coins → Gems → Tokens → Stocks
-            gems = amount / CONVERSION_RATES["gem_to_coin"]
-            tokens = gems / CONVERSION_RATES["token_to_gem"]
-            result = tokens / CONVERSION_RATES["stock_to_token"]
-
-        elif from_unit == "gems" and to_unit == "coins":
-            result = amount * CONVERSION_RATES["gem_to_coin"]
-        elif from_unit == "gems" and to_unit == "tokens":
-            result = amount / CONVERSION_RATES["token_to_gem"]
-        elif from_unit == "gems" and to_unit == "stocks":
-            result = amount / CONVERSION_RATES["stock_to_gem"]
-
-        elif from_unit == "tokens" and to_unit == "coins":
-            # Tokens → Gems → Coins
-            gems = amount * CONVERSION_RATES["token_to_gem"]
-            result = gems * CONVERSION_RATES["gem_to_coin"]
-        elif from_unit == "tokens" and to_unit == "gems":
-            result = amount * CONVERSION_RATES["token_to_gem"]
-        elif from_unit == "tokens" and to_unit == "stocks":
-            result = amount / CONVERSION_RATES["stock_to_token"]
-
-        elif from_unit == "stocks" and to_unit == "coins":
-            # Stocks → Gems → Coins
-            gems = amount * CONVERSION_RATES["stock_to_gem"]
-            result = gems * CONVERSION_RATES["gem_to_coin"]
-        elif from_unit == "stocks" and to_unit == "gems":
-            result = amount * CONVERSION_RATES["stock_to_gem"]
-        elif from_unit == "stocks" and to_unit == "tokens":
-            result = amount * CONVERSION_RATES["stock_to_token"]
-
-        else:
-            await update.message.reply_text("Invalid conversion type. Supported types: coins, gems, tokens, stocks.")
-            return
-
-        # Send the result
-        await update.message.reply_text(f"Conversion Result:\n{amount} {from_unit} = {result:.2f} {to_unit}")
-
+        amount = float(amount_str)
     except ValueError:
-        await update.message.reply_text("Please provide a valid number for the amount.")
-    except Exception as e:
-        print(f"Error: {e}")
-        await update.message.reply_text("An error occurred. Please check your command and try again.")
+        await update.message.reply_text("Please enter a valid amount.")
+        return
+
+    # Extract the units and conversion type
+    match = re.match(r"([a-z]+)-([a-z]+)", conversion_type.lower())
+    if not match:
+        await update.message.reply_text(
+            "Invalid conversion format. Usage: /calc <amount> <from_unit>-<to_unit>"
+        )
+        return
+
+    from_unit, to_unit = match.groups()
+
+    # Perform the appropriate conversion
+    if from_unit == "coins":
+        if to_unit == "gems":
+            result = coins_to_gems(amount)
+            await update.message.reply_text(f"{amount} Coins = {result} Gems")
+        elif to_unit == "tokens":
+            result = coins_to_tokens(amount)
+            await update.message.reply_text(f"{amount} Coins = {result} Tokens")
+        elif to_unit == "stocks":
+            result = coins_to_stocks(amount)
+            await update.message.reply_text(f"{amount} Coins = {result} Stocks")
+        else:
+            await update.message.reply_text("Invalid conversion type.")
+    elif from_unit == "gems":
+        if to_unit == "coins":
+            result = gems_to_coins(amount)
+            await update.message.reply_text(f"{amount} Gems = {result} Coins")
+        elif to_unit == "tokens":
+            result = gems_to_tokens(amount)
+            await update.message.reply_text(f"{amount} Gems = {result} Tokens")
+        elif to_unit == "stocks":
+            result = gems_to_stocks(amount)
+            await update.message.reply_text(f"{amount} Gems = {result} Stocks")
+        else:
+            await update.message.reply_text("Invalid conversion type.")
+    elif from_unit == "tokens":
+        if to_unit == "gems":
+            result = tokens_to_gems(amount)
+            await update.message.reply_text(f"{amount} Tokens = {result} Gems")
+        elif to_unit == "coins":
+            result = tokens_to_coins(amount)
+            await update.message.reply_text(f"{amount} Tokens = {result} Coins")
+        elif to_unit == "stocks":
+            result = tokens_to_stocks(amount)
+            await update.message.reply_text(f"{amount} Tokens = {result} Stocks")
+        else:
+            await update.message.reply_text("Invalid conversion type.")
+    else:
+        await update.message.reply_text("Invalid from_unit. Supported units: coins, gems, tokens, stocks.")
