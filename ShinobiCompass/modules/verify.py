@@ -214,7 +214,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
             f"🆔 <b>ID:</b> <code>{user['id']}</code>\n"
             f"🏯 <b>Clan:</b> {user['clan']}\n"
             f"🎚️ <b>Level:</b> {user['level']}\n"
-            f"🔗 <b>Link:</b> <a href='tg://user?id={user_id}}'>User Profile</a>\n"
+            f"🔗 <b>Link:</b> <a href='tg://user?id={user_id}'>User Profile</a>\n"
             f"📅 <b>Joined At:</b> {current_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
             f"✅ <b>Verified:</b> {'Yes' if user['verified'] else 'No'}"
         )
