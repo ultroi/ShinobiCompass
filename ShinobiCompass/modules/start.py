@@ -2,7 +2,6 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 from ShinobiCompass.database import db
 from ShinobiCompass.modules.sudo import is_owner_or_sudo
-from ShinobiCompass.modules.saveinfo import save_info
 from ShinobiCompass.modules.verify import require_verification
 
 # Reference to the new collection
