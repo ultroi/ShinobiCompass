@@ -4,6 +4,8 @@ from ShinobiCompass.database import db  # Adjusted database import
 from ShinobiCompass.modules.sudo import is_owner_or_sudo
 from functools import wraps
 import logging
+import re
+
 
 logger = logging.getLogger(__name__)
 
