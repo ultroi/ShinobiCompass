@@ -208,6 +208,8 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
     # Wait until the task end time
     now_ist = datetime.now(IST)
     task_end_time = task['end_time']
+    if task_end_time.tzinfo is None:  # If task_end_time is naive, make it aware
+        task_end_time = IST.localize(task_end_time)
     delay = (task_end_time - now_ist).total_seconds()   
 
     # Wait for 1 minute after the task end time
