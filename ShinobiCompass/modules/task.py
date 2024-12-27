@@ -460,6 +460,7 @@ async def clear_tasks(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text("All tasks have been cleared.")
     await context.bot.unpin_all_chat_messages(chat_id)
 
+
 @require_verification
 async def end_task(update: Update, context: CallbackContext) -> None:
     # Check if the user is an admin
@@ -482,11 +483,9 @@ async def end_task(update: Update, context: CallbackContext) -> None:
         {"$set": {"end_time": datetime.now(IST)}}  # Set the task's end time to the current time
     )
 
-    # Immediately call the delete_task_data function to handle the leaderboard and task cleanup
+    # Immediately call the delete_task_data function with the correct `task` dictionary
     await delete_task_data(task, chat_id, context)
 
-    # Remove the task from the database (since it's already marked as completed in delete_task_data)
-    tasks_collection.delete_one({"_id": task["_id"]})
 
 
 @require_verification
