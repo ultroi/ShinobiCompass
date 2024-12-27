@@ -169,7 +169,6 @@ async def set_task(update: Update, context: CallbackContext) -> None:
 
 
 async def edit_task_message(context: CallbackContext, chat_id: int, message_id: int, task_id: int, start_time_str: str, end_time_str: str, description: str, reward_value: int, reward_type: str, delay: float):
-    
     # Calculate task duration and wait until the task ends
     now_ist = datetime.now(IST)
     task_end_time = IST.localize(datetime.combine(now_ist.date(), datetime.strptime(end_time_str, '%I:%M%p').time()))
@@ -188,16 +187,20 @@ async def edit_task_message(context: CallbackContext, chat_id: int, message_id: 
         parse_mode=telegram.constants.ParseMode.HTML
     )
 
-
 async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
-    # Wait until the task end time
+    # Get the current time and task end time
     now_ist = datetime.now(IST)
     task_end_time = task['end_time']
     if task_end_time.tzinfo is None:  # If task_end_time is naive, make it aware
         task_end_time = IST.localize(task_end_time)
-    delay = (task_end_time - now_ist).total_seconds()   
 
-    # Wait for 1 minute after the task end time
+    # Calculate the end of the current day (23:59:59)
+    end_of_day = now_ist.replace(hour=23, minute=59, second=59, microsecond=0)
+
+    # Calculate delay until the end of the current day
+    delay = (end_of_day - now_ist).total_seconds()
+
+    # Wait until the end of the day
     await asyncio.sleep(delay)
 
     # Show the leaderboard immediately after task ends
@@ -213,7 +216,7 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
     # Update the task status to "completed"
     tasks_collection.update_one(
         {"_id": task['_id']},
-        {"$set": {"status": "completed", "end_time": datetime.now()}}
+        {"$set": {"status": "completed", "end_time": datetime.now(IST)}}
     )
 
     # Delete the task from the database
