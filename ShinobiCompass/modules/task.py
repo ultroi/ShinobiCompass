@@ -233,41 +233,39 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
     tasks_collection.delete_one({"_id": task['_id']})
 
 @require_verification
+@require_verification
 async def submit_inventory(update: Update, context: CallbackContext) -> None:
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
-    now_ist = datetime.now(IST)
+    now_ist = datetime.now(IST)  # Timezone-aware current time
     message_text = update.message.text.strip()
 
-    # If the task was found, proceed with your logic
-    task_start_time = task['start_time']
-    
-    # Convert task start time to be aware if it's naive
-    if task_start_time.tzinfo is None:
-        task_start_time = IST.localize(task_start_time)
-
-    # Compare times: now_ist should be aware, task_start_time is aware
-    if now_ist < task_start_time:
-        await update.message.reply_text("The event has not started yet. Please wait until the start time.")
+    # Check if the command is properly formatted
+    if not message_text.startswith('/finv') and not message_text.startswith('/linv'):
+        await update.message.reply_text("Invalid Format: Use /finv (reply to inventory message) for starting inventory or /linv for ending inventory.")
         return
 
-    # Extract the inventory type and task ID from the message
-    match = re.match(r"/(finv|linv)(?:@[\w\d_]+)? (\S+)", message_text)
+    # Extract inventory type and task ID (if provided)
+    parts = message_text.split()
+    if len(parts) > 1:
+        inventory_type = parts[0][1:]  # 'finv' or 'linv'
+        task_id = parts[1]
+    else:
+        inventory_type = parts[0][1:]
+        task_id = None
 
-    if not match:
-        await update.message.reply_text("Invalid Format : Use /finv (reply to inv message) For starting inventory \n Use /linv reply to ending inventory ")
-        return
-
-    inventory_type, task_id = match.groups()  # Extract inventory type (finv or linv) and task ID
-
-    # Find the task by task_id
-    task = tasks_collection.find_one({"task_id": task_id})
-    if not task:
-        await update.message.reply_text("Invalid task ID. \n Use /finv task_id || /linv task_id \n Task id is given in Task message in the group !!")
-        return
-
-    # Check if the command is used in a private message
+    # Handle PM (Private Message)
     if update.effective_chat.type == 'private':
+        if not task_id:
+            await update.message.reply_text("Please provide a task ID after the command. Example: /finv 12345")
+            return
+
+        # Find the task by task_id in PM
+        task = tasks_collection.find_one({"task_id": task_id})
+        if not task:
+            await update.message.reply_text("Invalid task ID. \n Use /finv task_id || /linv task_id \n Task id is given in Task message in the group !!")
+            return
+
         # Ensure the message is a reply to the inventory message
         if not update.message.reply_to_message:
             await update.message.reply_text("Please reply to the inventory message.")
@@ -293,7 +291,7 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
         my_glory = int(glory_match.group(1))
 
     else:
-        # Ensure the message is a reply to the inventory message
+        # Handle Group Chat
         if not update.message.reply_to_message:
             await update.message.reply_text("Please reply to the inventory message.")
             return
@@ -304,6 +302,21 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
         task = tasks_collection.find_one({"chat_id": chat_id, "start_time": {"$lt": now_ist}, "end_time": {"$gt": now_ist}})
         if not task:
             await update.message.reply_text("No active task to submit inventory for.")
+            return
+
+        # Safely access task start_time after checking the task
+        task_start_time = task.get('start_time')
+        if not task_start_time:
+            await update.message.reply_text("Task does not have a valid start time.")
+            return
+
+        # Convert task start time to be aware if it's naive
+        if task_start_time.tzinfo is None:
+            task_start_time = IST.localize(task_start_time)
+
+        # Compare times: now_ist should be aware, task_start_time is aware
+        if now_ist < task_start_time:
+            await update.message.reply_text("The event has not started yet. Please wait until the start time.")
             return
 
         # Verify the message is from the authorized bot (by sender ID)
@@ -327,16 +340,6 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text("Invalid inventory message format. Ensure it contains 'My Glory:' followed by a number.")
             return
         my_glory = int(glory_match.group(1))
-
-    # Notify the user if they haven't submitted the final inventory (linv) as the task is nearing its end
-    if now_ist > task['end_time'] - timedelta(minutes=5):
-        if f"linv_{user_id}" not in task:
-            user = await context.bot.get_chat_member(task['chat_id'], user_id)
-            user_link = f"[{user.user.first_name}](tg://user?id={user_id})"
-            await context.bot.send_message(
-                user_id, 
-                f"⚠️ {user_link}, you haven't submitted your final inventory (ending inventory). Please submit it quickly! ⚠️"
-            )
 
     # Submit starting or ending inventory
     if inventory_type == "finv":
