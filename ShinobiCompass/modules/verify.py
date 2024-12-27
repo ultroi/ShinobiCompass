@@ -172,6 +172,8 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         if is_owner is None:
             is_owner = False
 
+        
+        print(f"Updating user {update.effective_user.id} with verified status: {is_owner or clan_auth is not None}")
         # Update the user's data in the database (ensure this is async if using Motor)
         db.users.update_one(
             {"user_id": update.effective_user.id},
