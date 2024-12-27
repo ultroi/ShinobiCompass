@@ -10,68 +10,6 @@ users_collection = db["users"]  # Collection to store user info
 group_info_collection = db["groups"]  # Collection to store group info
 CHANNEL_ID = -1002254557222  # Channel ID where you want to send the info
 
-def save_info(func):
-    @wraps(func)
-    async def wrapper(update, context):
-        user_id = update.effective_user.id
-        username = update.effective_user.username
-        first_name = update.effective_user.first_name
-        user_link = f"t.me/{username}" if username else "No username"
-        current_time = datetime.utcnow()
-
-        # Check if user info already exists in the database to prevent duplicates
-        user_data = users_collection.find_one({"user_id": user_id})
-        
-        if not user_data:
-            # New user: save basic info to the database
-            user_data = {
-                "user_id": user_id,
-                "username": username,
-                "first_name": first_name,
-                "user_link": user_link,
-                "joined_at": current_time,
-                "has_started": False  # Track if user has started bot via PM
-            }
-            users_collection.insert_one(user_data)
-
-            # Send user info to the channel with an embedded user link using HTML
-            await context.bot.send_message(
-                chat_id=CHANNEL_ID,
-                text=f"""
-<b>🌟 New User 🌟</b>
-<b>🆔 ID:</b> <code>{user_id}</code>
-<b>👤 Name:</b> {first_name}
-<b>🔗 Link:</b> <a href="{user_link}">User Profile</a>
-<b>📅 Joined At:</b> {current_time.strftime('%Y-%m-%d %H:%M:%S')}
-""",
-                parse_mode="HTML"
-            )
-
-        # Check if the user has started the bot via PM
-        if not user_data["has_started"]:
-            # If the message is from a group (not private), ask the user to start the bot via PM
-            if update.message.chat.type != 'private':  # The message is not from PM
-                button = InlineKeyboardButton("Start Bot", url="t.me/ShinobiCompassBot")
-                keyboard = InlineKeyboardMarkup([[button]])
-
-                await update.message.reply_text(
-                    "Please start the bot in Pm First !!",
-                    reply_markup=keyboard
-                )
-                return  # Stop further command execution until the user starts the bot via PM
-
-            # User has directly started the bot in PM, update the has_started flag
-            users_collection.update_one(
-                {"user_id": user_id},
-                {"$set": {"has_started": True}}
-            )
-
-        # Proceed to the original function (command or message)
-        await func(update, context)
-        
-    return wrapper
-    
-
 # Group Info Capture
 def log_group_info(update: Update, context: CallbackContext):
     if update.message.chat.type in [Update.Chat.GROUP, Update.Chat.SUPERGROUP]:
