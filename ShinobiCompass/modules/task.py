@@ -449,6 +449,7 @@ async def taskresult(chat_id: int, context: CallbackContext) -> None:
     message = await context.bot.send_message(chat_id, leaderboard_text, parse_mode=telegram.constants.ParseMode.HTML)
     await context.bot.pin_chat_message(chat_id, message.message_id)
 
+# to clear and unpin all task 
 async def clear_tasks(update: Update, context: CallbackContext) -> None:
     if not await is_admin(update, context):
         await update.message.reply_text("Only admins can clear tasks.")
@@ -482,33 +483,9 @@ async def end_task(update: Update, context: CallbackContext) -> None:
     )
 
     # Show the leaderboard
-    leaderboard = []
-    for key, value in task.items():
-        if key.startswith("finv_"):
-            user_id = int(key.split("_")[1])
-            finv = value
-            linv = task.get(f"linv_{user_id}")
-            if linv is not None:
-                glory_diff = linv - finv
-                leaderboard.append((user_id, glory_diff))
-
-    # Sort leaderboard by glory difference in descending order
-    leaderboard.sort(key=lambda x: x[1], reverse=True)
-
-    # Extract reward details
-    reward_type = task['reward_type'].split()[-1]  # Assuming reward format like "100 coins"
-    reward_value = task['reward'].split()[0]
-
-    leaderboard_text = f"🏆 <b>Task Leaderboard ({reward_type})</b> 🏆\n\n"
-    
-    for user_id, glory_diff in leaderboard:
-        try:
-            user = await context.bot.get_chat_member(chat_id, user_id)
-            reward_amount = int(reward_value) * glory_diff
-            leaderboard_text += f"👤 {user.user.first_name} (ID: {user_id}) - {reward_amount} {reward_type}\n"
-        except Exception as e:
-            print(f"Error fetching user {user_id}: {e}")
-            leaderboard_text += f"👤 User {user_id} - {glory_diff} {reward_type}\n"
+    leaderboard_text = await get_task_result(chat_id, task, context)
+    if leaderboard_text is None:
+        return
 
     # Tag admins in the message
     admins = await context.bot.get_chat_administrators(chat_id)
@@ -524,14 +501,12 @@ async def end_task(update: Update, context: CallbackContext) -> None:
     )
 
     # Remove the task from the database as it is now ended
-    tasks_collection.delete_one({"_id": task["_id"]})
+    await delete_task_data(task, chat_id, context)
 
     # Unpin all messages and pin the new leaderboard message
     await context.bot.unpin_all_chat_messages(chat_id)
     message = await context.bot.send_message(chat_id, leaderboard_text, parse_mode=telegram.constants.ParseMode.HTML)
     await context.bot.pin_chat_message(chat_id, message.message_id)
-
-
 
 @require_verification
 async def cancel_task(update: Update, context: CallbackContext) -> None:
