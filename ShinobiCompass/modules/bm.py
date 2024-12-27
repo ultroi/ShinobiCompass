@@ -192,7 +192,6 @@ async def bm(update: Update, _: CallbackContext) -> None:
         await update.message.reply_text("⚠️ Please reply to a valid black market message.")
 
 # Automatic analysis
-@save_info
 async def handle_message(update: Update, _: CallbackContext) -> None:
     if not update.message:
         return
