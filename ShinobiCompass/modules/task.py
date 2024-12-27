@@ -213,15 +213,24 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
     # Wait until the end of the day
     await asyncio.sleep(delay)
 
-    # Show the leaderboard immediately after task ends
-    await taskresult(chat_id, context)
+    # Show the leaderboard immediately after the task ends
+    leaderboard_message = await taskresult(chat_id, context)
+
+    # Pin the leaderboard message (if generated successfully)
+    leaderboard_message_id = None
+    if leaderboard_message:
+        leaderboard_message_id = leaderboard_message.message_id
+        try:
+            await context.bot.pin_chat_message(chat_id, leaderboard_message_id)
+        except telegram.error.BadRequest as e:
+            print(f"Error while pinning leaderboard: {e}")
 
     # Unpin the task message (if it exists)
     if 'message_id' in task:
         try:
             await context.bot.unpin_chat_message(chat_id, task['message_id'])
         except telegram.error.BadRequest as e:
-            print(f"Error while unpinning: {e}")
+            print(f"Error while unpinning task message: {e}")
 
     # Update the task status to "completed"
     tasks_collection.update_one(
@@ -231,6 +240,14 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
 
     # Delete the task from the database
     tasks_collection.delete_one({"_id": task['_id']})
+
+    # Unpin the leaderboard message after 24 hours
+    if leaderboard_message_id:
+        await asyncio.sleep(86400)  # 24 hours in seconds
+        try:
+            await context.bot.unpin_chat_message(chat_id, leaderboard_message_id)
+        except telegram.error.BadRequest as e:
+            print(f"Error while unpinning leaderboard message: {e}")
 
 @require_verification
 async def submit_inventory(update: Update, context: CallbackContext) -> None:
