@@ -1,5 +1,5 @@
 from telegram import Update
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, ContextTypes
 from ShinobiCompass.database import db  # Adjusted database import
 import logging
 
