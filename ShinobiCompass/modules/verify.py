@@ -50,10 +50,10 @@ async def is_verified(update: Update, context: CallbackContext):
 
 
 # This decorator checks if the user is verified. If not, it asks the user to verify.
-async def require_verification(func):
+def require_verification(func):
     @wraps(func)
     async def wrapper(update: Update, context: CallbackContext, *args, **kwargs):
-        # Check if the user is verified (using asyncio.to_thread to run blocking DB operation)
+        # Check if the user is verified (using asyncio to run async DB operation)
         is_verified_user = await is_verified(update, context)
 
         if not is_verified_user:
@@ -62,17 +62,7 @@ async def require_verification(func):
             )
             return
 
-        # If the user is verified, check if they are authorized (i.e., clan is authorized)
-        user_id = update.effective_user.id
-        user = db.users.find_one({"id": user_id})
-        
-        if not user or not user.get("verified", False):
-            await update.message.reply_text(
-                "⚠️ You are not authorized. Please make sure you have a valid clan authorization."
-            )
-            return
-
-        # Proceed to the original function if verified and authorized
+        # If the user is verified, proceed to the original function
         return await func(update, context, *args, **kwargs)
 
     return wrapper
