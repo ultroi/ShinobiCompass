@@ -4,8 +4,9 @@ import re
 from ShinobiCompass.modules.saveinfo import save_info
 
 #   Function to calculate XP details with the updated format and HTML
- async def calculate_xp_info(inventory_text):
-    try:
+ Function to calculate XP details with the updated format and HTML
+async def calculate_xp_info(inventory_text):
+ try:
         # Extract information from the inventory using regex
         name_match = re.search(r"┣ 👤 Name: (.+)", inventory_text)
         level_match = re.search(r"┣ 🎚️ Level: (\d+)", inventory_text)
