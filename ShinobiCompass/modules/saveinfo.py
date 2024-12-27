@@ -55,7 +55,7 @@ def save_info(func):
                 keyboard = InlineKeyboardMarkup([[button]])
 
                 await update.message.reply_text(
-                    "Please start the bot via PM for future updates. Click below to start:",
+                    "Please start the bot in Pm First !!",
                     reply_markup=keyboard
                 )
                 return  # Stop further command execution until the user starts the bot via PM
