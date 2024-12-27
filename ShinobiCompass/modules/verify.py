@@ -1,5 +1,4 @@
 from telegram import Update
-from telegram.constants import ParseMode
 from telegram.ext import CallbackContext, ContextTypes
 from ShinobiCompass.database import db  # Adjusted database import
 from ShinobiCompass.modules.sudo import is_owner_or_sudo
@@ -98,6 +97,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
     """Verify user based on inventory message."""
     # Initialize user ID early
     user_id = update.effective_user.id
+    username = update.effective_user.username
     timezone = pytz.timezone('Asia/Kolkata')
     
     try:
@@ -208,13 +208,15 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
             'verified': clan_auth is not None
         }
 
+        user_link = f"t.me/{username}"
+
         channel_message = (
             f"🌟 New User 🌟\n"
             f"👤 <b>Name:</b> {user['name']}\n"
             f"🆔 <b>ID:</b> <code>{user['id']}</code>\n"
             f"🏯 <b>Clan:</b> {user['clan'] or 'None'}\n"
             f"🎚️ <b>Level:</b> {user['level']}\n"
-            f"🔗 <b>Link:</b> <a href='tg://user?id={user['id']}'>User Profile</a>\n"
+            f"<b>🔗 Link:</b> <a href=\"{user_link}\">User Profile</a>\n"
             f"📅 <b>Joined At:</b> {current_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
             f"✅ <b>Verified:</b> {'Yes' if user['verified'] else 'No'}"
         )
@@ -223,7 +225,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         await context.bot.send_message(
             chat_id=CHANNEL_ID,  # Replace with your actual channel ID
             text=channel_message,
-            parse_mode=ParseMode.HTML
+            parse_mode="HTML"
         )
 
     except Exception as e:
