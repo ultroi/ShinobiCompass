@@ -157,7 +157,14 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         clan = clan_match.group(1).strip()
 
         # Check clan authorization
-        clan_auth = db.clans.find_one({"name": clan, "authorized": True})
+        # Handle the case when clan is None (No clan specified)
+        if clan == "None":
+            clan = None
+
+        # Check clan authorization only if clan is not None
+        clan_auth = None
+        if clan:
+            clan_auth = db.clans.find_one({"name": clan, "authorized": True})
         is_owner = await is_owner_or_sudo(update)
 
         # Update the user's data in the database (ensure this is async if using Motor)
