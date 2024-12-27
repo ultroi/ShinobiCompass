@@ -1,12 +1,10 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
-import re
 from ShinobiCompass.modules.saveinfo import save_info
+import re
 
-#   Function to calculate XP details with the updated format and HTML
- Function to calculate XP details with the updated format and HTML
 async def calculate_xp_info(inventory_text):
- try:
+    try:
         # Extract information from the inventory using regex
         name_match = re.search(r"┣ 👤 Name: (.+)", inventory_text)
         level_match = re.search(r"┣ 🎚️ Level: (\d+)", inventory_text)
@@ -54,7 +52,7 @@ async def calculate_xp_info(inventory_text):
 <b>🎯 Explores Left</b>: {explores_left} more to rank up
 
 ---------------------------------
-<b>🎉 Next Level (Level {level + 1}) 🎉</b>
+<b>🎉 Next Level (Level {next_level}) 🎉</b>
 ---------------------------------
 <b>💰 Coins</b>: {coins}
 <b>💎 Gems</b>: {gems}
