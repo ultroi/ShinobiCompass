@@ -12,7 +12,7 @@ async def is_owner(update: Update) -> bool:
         return update.message.from_user.id == OWNER_ID  # Compare with OWNER_ID
     return False  # Return False if update.message is None or from_user is None
 
-# Helper function to check if the user is the owner or a sudo user
+# Helper function to check if the user is the owner or a sudo user.
 async def is_owner_or_sudo(update: Update) -> bool:
     user_id = update.message.from_user.id
     
@@ -26,6 +26,7 @@ async def is_owner_or_sudo(update: Update) -> bool:
         return True
     
     return False
+
 
 # Command to add a sudo user
 async def addsudo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
