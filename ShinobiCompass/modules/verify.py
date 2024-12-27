@@ -53,12 +53,6 @@ def require_verification(func):
 
 async def verify_user(update: Update, context: CallbackContext) -> None:
     """Verify user based on inventory message."""
-
-    # Ensure that the database connection is initialized
-    db = context.bot_data.get("db")
-    if db is None:
-        await update.message.reply_text("⚠️ Database connection is not initialized.")
-        return
     
     # Check if the message is coming from a group chat
     if update.message.chat.type != 'private':
