@@ -53,7 +53,7 @@ async def require_verification(func):
     @wraps(func)
     async def wrapper(update: Update, context: CallbackContext, *args, **kwargs):
         user_id = update.effective_user.id
-        user = await db.users.find_one({"id": user_id})  # Replace with actual DB query
+        user = db.users.find_one({"id": user_id})  # Replace with actual DB query
         
         if not user:
             await update.message.reply_text(
