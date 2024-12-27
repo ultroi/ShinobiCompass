@@ -30,7 +30,6 @@ async def get_users_collection():
         return None
 
 # Function to check if the user is verified
-# Function to check if the user is verified
 async def is_verified(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     logger.info(f"Checking verification for user ID: {user_id}")
@@ -44,11 +43,23 @@ async def is_verified(update: Update, context: CallbackContext):
     # Check if the user exists and if verified
     user_data = users_collection.find_one({"user_id": user_id})
     if user_data and user_data.get("verified", False):
-        logger.info(f"User ID: {user_id} is verified.")
-        return True
+        # If the user is verified, check if their clan is authorized
+        clan = user_data.get("clan")
+        if clan is None:
+            logger.info(f"User ID: {user_id} is verified, but has no clan specified.")
+            return False  # If no clan is specified, return False
 
+        # If clan is specified, check if it's authorized
+        clan_auth = db.clans.find_one({"name": clan, "authorized": True})
+        if clan_auth:
+            logger.info(f"User ID: {user_id} is verified and part of an authorized clan.")
+            return True
+        else:
+            logger.info(f"User ID: {user_id} is verified but their clan '{clan}' is not authorized.")
+            return False
     logger.info(f"User ID: {user_id} is not verified.")
     return False
+
 
 
 # This decorator checks if the user is verified. If not, it asks the user to verify.
