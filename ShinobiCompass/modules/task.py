@@ -239,12 +239,14 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
     now_ist = datetime.now(IST)
     message_text = update.message.text.strip()
 
-    # Convert task start time to be aware in IST timezone
+    # If the task was found, proceed with your logic
     task_start_time = task['start_time']
-    if task_start_time.tzinfo is None:  # If the task start time is naive, make it aware
+    
+    # Convert task start time to be aware if it's naive
+    if task_start_time.tzinfo is None:
         task_start_time = IST.localize(task_start_time)
 
-    # Compare the times (both should now be timezone-aware)
+    # Compare times: now_ist should be aware, task_start_time is aware
     if now_ist < task_start_time:
         await update.message.reply_text("The event has not started yet. Please wait until the start time.")
         return
