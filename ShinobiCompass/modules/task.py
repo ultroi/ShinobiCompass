@@ -5,7 +5,6 @@ import telegram
 import asyncio
 from telegram.ext import CallbackContext
 from ShinobiCompass.database import db
-from ShinobiCompass.modules.saveinfo import save_info
 from ShinobiCompass.modules.verify import require_verification
 import re
 import uuid
