@@ -49,14 +49,39 @@ async def is_verified(update: Update, context: CallbackContext):
     return False
 
 
-
-def require_verification(func):
+async def require_verification(func):
     @wraps(func)
     async def wrapper(update: Update, context: CallbackContext, *args, **kwargs):
-        if not await is_verified(update, context):  # Pass both update and context here
-            await update.message.reply_text("⚠️ Clan Verification Needed : Send your inv reply to /verify")
+        user_id = update.effective_user.id
+        user = await db.users.find_one({"id": user_id})  # Replace with actual DB query
+        
+        if not user:
+            await update.message.reply_text(
+                "❌ User data not found. Please verify your account."
+            )
+            return  # Exit if the user data is not found
+
+        # Check verification status
+        verified = user.get("verified", False)
+
+        # Allow `/xp` and `/iseal` with a warning if not verified
+        if func.__name__ in ["xp_command", "iseal_command"]:
+            if not verified:
+                await update.message.reply_text(
+                    "⚠️ You are not verified, but you can still use this command. Verification is recommended for full access.\n /xp - To check your progress \n /iseal - to get about information sealing technique."
+                )
+            return await func(update, context, *args, **kwargs)
+
+        # Block all other commands for unverified users
+        if not verified:
+            await update.message.reply_text(
+                "⚠️ This command is restricted to verified users. Please verify your account to proceed."
+            )
             return
+
+        # Proceed if the user is verified
         return await func(update, context, *args, **kwargs)
+
     return wrapper
 
 
