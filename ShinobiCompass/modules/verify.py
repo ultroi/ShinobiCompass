@@ -186,7 +186,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         )
 
         # Notify the user about their verification status
-        if is_owner or clan_auth is not None:
+        if clan_auth is not None:
             await update.message.reply_text(
                 f"✅ {name} (ID: {update.effective_user.id}) has been verified as part of the {clan} clan!"
             )
