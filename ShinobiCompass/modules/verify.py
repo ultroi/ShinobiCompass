@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes, CallbackContext
-from database import db  # Adjusted database import
+from ShinobiCompass.database import db  # Adjusted database import
 from modules.sudo import is_owner_or_sudo
 import logging
 import re
