@@ -197,12 +197,18 @@ async def edit_task_message(context: CallbackContext, chat_id: int, message_id: 
         parse_mode=telegram.constants.ParseMode.HTML
     )
 
+
 async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
     # Get the current time and task end time
     now_ist = datetime.now(IST)
     task_end_time = task['end_time']
     if task_end_time.tzinfo is None:  # If task_end_time is naive, make it aware
         task_end_time = IST.localize(task_end_time)
+
+    # Wait until the task end time is reached (sleeping until the task ends)
+    if now_ist < task_end_time:
+        await asyncio.sleep((task_end_time - now_ist).total_seconds())
+        now_ist = datetime.now(IST)  # Get current time again after the wait
 
     # Generate leaderboard
     leaderboard = []
@@ -220,7 +226,6 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
         
         # Edit task message and pin it since there's no participation
         await editing_task_message(context, task, chat_id, pin=True)
-        return
     else:
         # If there is participation, edit the task message but don't pin it
         await editing_task_message(context, task, chat_id, pin=False)
@@ -243,8 +248,7 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
 
     # Delete the task from the database
     tasks_collection.delete_one({"_id": task['_id']})
-
-
+    
 
 @require_verification
 async def submit_inventory(update: Update, context: CallbackContext) -> None:
@@ -255,7 +259,7 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
 
     # Check if the command is properly formatted
     if not message_text.startswith('/finv') and not message_text.startswith('/linv'):
-        await update.message.reply_text("Invalid Format: Use /finv (reply to inventory message) for starting inventory or /linv for ending inventory.")
+        await update.message.reply_text("Invalid Format: Use /finv (reply to inventory message) for startin g inventory or /linv for ending inventory.")
         return
 
     # Extract inventory type and task ID (if provided)
