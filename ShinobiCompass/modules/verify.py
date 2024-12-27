@@ -58,6 +58,8 @@ def require_verification(func):
         return await func(update, context, *args, **kwargs)
     return wrapper
 
+
+# Function to verify the user
 async def verify_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Verify user based on inventory message."""
     
@@ -116,12 +118,12 @@ async def verify_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         level = int(level_match.group(1))
         clan = clan_match.group(1).strip()
 
-        # Check clan authorization
-        clan_auth = await db.clans.find_one({"name": clan, "authorized": True})
+        # Check clan authorization (synchronous query)
+        clan_auth = db.clans.find_one({"name": clan, "authorized": True})
         is_owner = await is_owner_or_sudo(update)
 
-        # Update the user's data in the database (ensure this is async if using Motor)
-        await db.users.update_one(
+        # Update the user's data in the database (synchronous pymongo operation)
+        db.users.update_one(
             {"id": update.effective_user.id},
             {
                 "$set": {
@@ -134,8 +136,8 @@ async def verify_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             upsert=True,
         )
 
-        # Retrieve user data from the database (async if using Motor)
-        user = await db.users.find_one({"id": update.effective_user.id})
+        # Retrieve user data from the database (synchronous pymongo operation)
+        user = db.users.find_one({"id": update.effective_user.id})
 
         # Generate a formatted message
         message = (
@@ -166,7 +168,7 @@ async def verify_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     except Exception as e:
         await update.message.reply_text(f"⚠️ An error occurred while verifying the user: {str(e)}")
 
-#auth the coan and user
+# Function to authorize a user or clan
 async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Authorize a clan or verify a specific user."""
     if not await is_owner_or_sudo(update):
@@ -181,18 +183,19 @@ async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     if input_value.isdigit():
         user_id = int(input_value)
-        user = await db.users.find_one({"id": user_id})
+        user = db.users.find_one({"id": user_id})
         if not user:
             await update.message.reply_text(f"⚠️ No user found with ID {user_id}.")
             return
 
-        await db.users.update_one({"id": user_id}, {"$set": {"verified": True}})
+        db.users.update_one({"id": user_id}, {"$set": {"verified": True}})
         await update.message.reply_text(f"✅ User [{user['name']}](tg://user?id={user_id}) (ID: {user_id}) has been verified.", parse_mode="Markdown")
     else:
         clan_name = input_value
-        await db.clans.update_one({"name": clan_name}, {"$set": {"authorized": True}}, upsert=True)
+        db.clans.update_one({"name": clan_name}, {"$set": {"authorized": True}}, upsert=True)
         await update.message.reply_text(f"✅ Clan '{clan_name}' has been authorized.")
 
+# Function to display user info
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Display information about a user."""
     if not await is_owner_or_sudo(update):
@@ -205,7 +208,7 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     try:
         user_id = int(context.args[0])
-        user = await db.users.find_one({"id": user_id})
+        user = db.users.find_one({"id": user_id})
         if not user:
             await update.message.reply_text("⚠️ No user found with the given ID.")
             return
