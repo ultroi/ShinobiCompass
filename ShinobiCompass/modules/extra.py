@@ -70,23 +70,9 @@ async def calculate_xp_info(inventory_text):
     except Exception as e:
         return f"Error processing inventory: {str(e)}"
 
-# /xp command handler to process the inventory text from the message
+
 @require_verification
 async def xp_command(update: Update, context: CallbackContext):
-    # Check verification status
-    user_id = update.effective_user.id
-    user = db.users.find_one({"id": user_id})  # Replace with actual DB call
-
-    if not user:
-        await update.message.reply_text("❌ User data not found. Please verify your account.")
-        return
-
-    if not user.get("verified", False):
-        await update.message.reply_text(
-            "⚠️ You are not verified, but you can still use this command. Verification is recommended for full access."
-        )
-
-    # Process XP calculation
     if update.message.reply_to_message:
         # Get the inventory text from the replied message
         inventory_text = update.message.reply_to_message.text
@@ -99,25 +85,8 @@ async def xp_command(update: Update, context: CallbackContext):
         await update.message.reply_text("Please reply to an inventory message to get XP details.", parse_mode="HTML")
 
 
-
-
-# /iseal command handler to display sealing techniques
 @require_verification
 async def iseal_command(update: Update, context: CallbackContext):
-    # Check verification status
-    user_id = update.effective_user.id
-    user = db.users.find_one({"id": user_id})  # Replace with actual DB call
-
-    if not user:
-        await update.message.reply_text("❌ User data not found. Please verify your account.")
-        return
-
-    if not user.get("verified", False):
-        await update.message.reply_text(
-            "⚠️ You are not verified, but you can still use this command. Verification is recommended for full access."
-        )
-
-    # Send sealing techniques information
     response = """
 <b>🍃 Naruto Sealing Techniques 🍃</b>
 
