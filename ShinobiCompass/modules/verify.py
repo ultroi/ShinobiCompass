@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 CHANNEL_ID = -1002254557222  # Your channel ID for notifications
 
+# Function to get sudo users collection
 async def get_sudo_users_collection():
     if db:
         return db["sudo_users"]
@@ -17,23 +18,34 @@ async def get_sudo_users_collection():
         logger.error("Database connection is not initialized.")
         return None
 
-async def is_verified(update, context):
+# Function to get users collection
+async def get_users_collection():
+    if db:
+        return db["users"]
+    else:
+        logger.error("Database connection is not initialized.")
+        return None
+
+# Function to check if the user is verified
+async def is_verified(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
     logger.info(f"Checking verification for user ID: {user_id}")
 
-    db = context.bot_data.get("db")
-    if db is None:
-        logger.error("Database connection is not initialized.")
+    # Get the users collection directly from db
+    users_collection = await get_users_collection()
+    if users_collection is None:
+        logger.error("Unable to access 'users' collection.")
         return False
 
     # Check if the user exists and if verified
-    user_data = db["users"].find_one({"user_id": user_id})
+    user_data = users_collection.find_one({"user_id": user_id})
     if user_data and user_data.get("verified", False):
         logger.info(f"User ID: {user_id} is verified.")
         return True
 
     logger.info(f"User ID: {user_id} is not verified.")
     return False
+
 
 def require_verification(func):
     @wraps(func)
