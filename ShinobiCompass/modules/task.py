@@ -483,7 +483,7 @@ async def end_task(update: Update, context: CallbackContext) -> None:
     # Sort leaderboard by glory difference in descending order
     leaderboard.sort(key=lambda x: x[1], reverse=True)
 
-    reward_type = task['reward'].split()[-1]  # Assuming reward format like "100 coins"
+    reward_type = task['reward_type'].split()[-1]  # Assuming reward format like "100 coins"
     leaderboard_text = f"🏆 <b>Task Leaderboard ({reward_type})</b> 🏆\n\n"
     
     for user_id, glory_diff in leaderboard:
