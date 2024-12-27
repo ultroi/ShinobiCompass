@@ -73,10 +73,10 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
     """Verify user based on inventory message."""
 
     # Check if the user is already verified
-        user = db.users.find_one({"id": update.effective_user.id})
-        if user and user.get("verified", False):
-            await update.message.reply_text(" You are already verified!✅")
-            return
+    user = db.users.find_one({"id": update.effective_user.id})
+    if user and user.get("verified", False):
+        await update.message.reply_text(" You are already verified!✅")
+        return
     
     # Check if the message is coming from a private message
     if update.message.chat.type != 'private':
