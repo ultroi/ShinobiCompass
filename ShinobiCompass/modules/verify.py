@@ -71,14 +71,9 @@ def require_verification(func):
 
 
 # Function to verify the user
+# Function to verify the user
 async def verify_user(update: Update, context: CallbackContext) -> None:
     """Verify user based on inventory message."""
-
-    # Check if the user is already verified
-    user = db.users.find_one({"id": update.effective_user.id})
-    if user and user.get("verified", False):
-        await update.message.reply_text(" You are already verified!✅")
-        return
     
     # Check if the message is coming from a private message
     if update.message.chat.type != 'private':
@@ -105,13 +100,13 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         return
 
     # Check if the inventory message was sent within the last minute
-        message_time = update.message.reply_to_message.date
-        current_time = datetime.now()
-        time_diff = current_time - message_time
+    message_time = update.message.reply_to_message.date
+    current_time = datetime.now()
+    time_diff = current_time - message_time
 
-        if time_diff > timedelta(minutes=1):
-            await update.message.reply_text("⚠️ The inventory message is older than 1 minute. Please resend your inventory message.")
-            return
+    if time_diff > timedelta(minutes=1):
+        await update.message.reply_text("⚠️ The inventory message is older than 1 minute. Please resend your inventory message.")
+        return
 
     try:
         # Extract user ID from inventory message
@@ -153,7 +148,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
 
         # Update the user's data in the database (ensure this is async if using Motor)
         db.users.update_one(
-            {"id": update.effective_user.id},
+            {"user_id": update.effective_user.id},
             {
                 "$set": {
                     "name": name,
@@ -164,28 +159,6 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
                 }
             },
             upsert=True,
-        )
-
-        # Retrieve user data from the database
-        user = db.users.find_one({"id": update.effective_user.id})
-
-        # Generate a well-formatted message
-        user_link = f"tg://user?id={update.effective_user.id}"
-        message = (
-            f"<b>🌟 New User 🌟</b>\n\n"
-            f"<b>👤 Name:</b> {user['name']}\n"
-            f"<b>🆔 ID:</b> <code>{user['id']}</code>\n"
-            f"<b>🏯 Clan:</b> {user['clan']}\n"
-            f"<b>🔗 Link:</b> <a href='{user_link}'>User Profile</a>\n"
-            f"<b>📅 Joined At:</b> {user['joined_at']}\n"
-            f"✅ <b>Verified:</b> {'Yes' if user['verified'] else 'No'}"
-        )
-
-        # Send the message to the specified channel
-        await context.bot.send_message(
-            chat_id=CHANNEL_ID,
-            text=message,
-            parse_mode="HTML"
         )
 
         # Notify the user about their verification status
