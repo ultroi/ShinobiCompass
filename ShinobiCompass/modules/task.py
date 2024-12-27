@@ -237,7 +237,17 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
     now_ist = datetime.now(IST)
-    message_text = update.message.text
+    message_text = update.message.text.strip()
+
+    # Convert task start time to be aware in IST timezone
+    task_start_time = task['start_time']
+    if task_start_time.tzinfo is None:  # If the task start time is naive, make it aware
+        task_start_time = IST.localize(task_start_time)
+
+    # Compare the times (both should now be timezone-aware)
+    if now_ist < task_start_time:
+        await update.message.reply_text("The event has not started yet. Please wait until the start time.")
+        return
 
     # Extract the inventory type and task ID from the message
     match = re.match(r"/(finv|linv)(?:@[\w\d_]+)? (\S+)", message_text)
@@ -315,11 +325,6 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text("Invalid inventory message format. Ensure it contains 'My Glory:' followed by a number.")
             return
         my_glory = int(glory_match.group(1))
-
-    # Handle task starting time and prevent premature inventory submission
-    if now_ist < task['start_time']:
-        await update.message.reply_text(f"Event will start soon at {task['start_time'].strftime('%Y-%m-%d %H:%M:%S')}. Please wait until then to submit your inventory.")
-        return
 
     # Notify the user if they haven't submitted the final inventory (linv) as the task is nearing its end
     if now_ist > task['end_time'] - timedelta(minutes=5):
