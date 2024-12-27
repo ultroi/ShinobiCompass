@@ -135,8 +135,8 @@ async def calculate_conversion(update: Update, context: CallbackContext) -> None
         args = context.args
         if len(args) != 2 or '-' not in args[1]:
             await update.message.reply_text(
-                "Usage: /calc <amount> <from-to>\n"
-                "Example: /calc 2000 coins-gems"
+                "Usage: /convert <amount> <from-to>\n"
+                "Example: /convert 2000 coins-gems"
             )
             return
 
