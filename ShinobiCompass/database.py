@@ -49,6 +49,7 @@ def setup_mongo(retries: int = 3, delay: int = 5):
             if attempt < retries:
                 logger.info(f"Retrying in {delay} seconds...")
                 time.sleep(delay)
+                delay *= 2
             else:
                 logger.critical("Failed to connect to MongoDB after multiple attempts.", exc_info=True)
                 raise e
