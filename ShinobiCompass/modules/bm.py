@@ -5,7 +5,7 @@ from telegram.ext import (
     CallbackContext,
     filters,
 )
-from ShinobiCompass.modules.saveinfo import save_info
+
 #from ShinobiCompass.modules.flood import flood_control
 from ShinobiCompass.modules.verify import require_verification
 
@@ -169,7 +169,6 @@ def analyze_message(message):
 
 # Command: /bm (manual analysis)
 @require_verification
-@save_info
 async def bm(update: Update, _: CallbackContext) -> None:
     if update.message.reply_to_message:
         # Get the replied message content
