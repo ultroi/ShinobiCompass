@@ -178,8 +178,8 @@ async def edit_task_message(context: CallbackContext, chat_id: int, message_id: 
             f"<b>Description:</b> <i>{description}</i>\n"
             f"<b>Reward:</b> <i>{reward_value} {reward_type}</i>\n\n"
             f"<b>How to Participate:</b>\n"
-            f"1️⃣ <b>/finv</b> — Submit your starting inventory.\n"
-            f"2️⃣ <b>/linv</b> — Submit your last inventory.\n\n"
+            f"1️⃣ <b>/finv</b> task_id — Submit your starting inventory.\n"
+            f"2️⃣ <b>/linv</b> task_id — Submit your last inventory.\n\n"
             f"🌨️🕒 Make sure to submit your participation before the task expires in the frosty air!"
         ),
         parse_mode=telegram.constants.ParseMode.HTML
@@ -242,7 +242,7 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
     # Extract the inventory type and task ID from the message
     match = re.match(r"/(finv|linv) (\S+)", message_text)
     if not match:
-        await update.message.reply_text("Invalid command format. Use /finv unique_id or /linv unique_id.")
+        await update.message.reply_text("Invalid Format : Use /finv task_id (reply to inv message)\n Use /linv task_id")
         return
 
     inventory_type, task_id = match.groups()  # Extract inventory type (finv or linv) and task ID
@@ -406,7 +406,7 @@ async def taskresult(chat_id: int, context: CallbackContext) -> None:
     for user_id, glory_diff in leaderboard:
         user = await context.bot.get_chat_member(chat_id, user_id)
         reward_amount = int(reward_value) * glory_diff
-        leaderboard_text += f"🔸 <a href='tg://user?id={user_id}'>{user.user.first_name}</a> <code>{user_id}</code> <code>{reward_amount}</code> {reward_type}\n\n"
+        leaderboard_text += f"🔸 <a href='tg://user?id={user_id}'>{user.user.first_name}</a> || <code>{user_id}</code> || <code>{reward_amount}</code> {reward_type}\n\n"
 
     # Unpin the task message
     try:
