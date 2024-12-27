@@ -49,7 +49,6 @@ async def calculate_xp_info(inventory_text):
 <b>👤 Name</b>: {name}
 <b>⚔️ Level</b>: {level} 
 <b>🌀 Remaining Exp</b>: {remaining_exp}
-<b>🎯 Explores Left</b>: {explores_left} more to rank up
 
 ---------------------------------
 <b>🎉 Next Level (Level {next_level}) 🎉</b>
