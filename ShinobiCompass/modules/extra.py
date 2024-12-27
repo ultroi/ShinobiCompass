@@ -1,6 +1,5 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
-from ShinobiCompass.modules.saveinfo import save_info
 import re
 
 async def calculate_xp_info(inventory_text):
@@ -71,7 +70,6 @@ async def calculate_xp_info(inventory_text):
         return f"Error processing inventory: {str(e)}"
 
 # /xp command handler to process the inventory text from the message
-@save_info
 async def xp_command(update: Update, context: CallbackContext):
     if update.message.reply_to_message:
         # Get the inventory text from the replied message
@@ -85,7 +83,6 @@ async def xp_command(update: Update, context: CallbackContext):
         await update.message.reply_text("Please reply to an inventory message to get XP details.", parse_mode="HTML")
 
 # /iseal command handler to display sealing techniques
-@save_info
 async def iseal_command(update: Update, context: CallbackContext):
     response = """
 <b>🍃 Naruto Sealing Techniques 🍃</b>
