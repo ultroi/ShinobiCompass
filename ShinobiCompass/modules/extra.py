@@ -3,8 +3,8 @@ from telegram.ext import Application, CommandHandler, CallbackContext
 import re
 from ShinobiCompass.modules.saveinfo import save_info
 
-# Ensure this function is asynchronous if necessary
-async def calculate_xp_info(inventory_text):
+#   Function to calculate XP details with the updated format and HTML
+ async def calculate_xp_info(inventory_text):
     try:
         # Extract information from the inventory using regex
         name_match = re.search(r"┣ 👤 Name: (.+)", inventory_text)
@@ -26,21 +26,22 @@ async def calculate_xp_info(inventory_text):
 
         # Calculate remaining EXP and explores left
         remaining_exp = next_level_exp - current_exp
-        explores_left = remaining_exp // 350
+        explores_left = remaining_exp // 325  # Updated from 350 to 325
 
-        # Calculate next level up rewards based on level
-        if level < 100:
-            coins = level * 1000
-            gems = level * 5
-            tokens = level + 10
-        elif level < 200:
-            coins = level * 1000
-            gems = level * 10
-            tokens = level * 2 + 10
+        # Calculate next level up rewards based on the next level
+        next_level = level + 1  # Next level calculation
+        if next_level < 100:
+            coins = next_level * 1000
+            gems = next_level * 5
+            tokens = next_level + 10
+        elif next_level < 200:
+            coins = next_level * 1000
+            gems = next_level * 10
+            tokens = next_level * 2 + 10
         else:
-            coins = level * 1000
-            gems = level * 20
-            tokens = level * 3 + 10
+            coins = next_level * 1000
+            gems = next_level * 20
+            tokens = next_level * 3 + 10
 
         # Generate the output message in HTML format
         xp_info = f"""
