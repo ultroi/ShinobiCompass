@@ -1,6 +1,8 @@
 from telegram import Update
 from telegram.ext import CallbackContext, ContextTypes
 from ShinobiCompass.database import db  # Adjusted database import
+from ShinobiCompass.modules.sudo import is_owner_or_sudo
+from functools import wraps
 import logging
 
 logger = logging.getLogger(__name__)
