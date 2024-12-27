@@ -38,7 +38,7 @@ async def is_verified(update, context):
 def require_verification(func):
     @wraps(func)
     async def wrapper(update: Update, context: CallbackContext, *args, **kwargs):
-        if not await is_verified(update):
+        if not await is_verified(update, context):  # Pass both update and context here
             await update.message.reply_text("⚠️ Clan Verification Needed : Send your inv reply to /verify")
             return
         return await func(update, context, *args, **kwargs)
