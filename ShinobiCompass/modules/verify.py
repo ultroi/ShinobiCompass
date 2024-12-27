@@ -167,6 +167,10 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
             clan_auth = db.clans.find_one({"name": clan, "authorized": True})
         is_owner = await is_owner_or_sudo(update)
 
+        # If is_owner_or_sudo returns None, default to False
+        if is_owner is None:
+            is_owner = False
+
         # Update the user's data in the database (ensure this is async if using Motor)
         db.users.update_one(
             {"user_id": update.effective_user.id},
