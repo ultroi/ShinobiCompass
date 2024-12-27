@@ -158,7 +158,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
 
         # Check clan authorization
         # Handle the case when clan is None (No clan specified)
-        if clan == "None":
+        if clan == "None" or clan is None:
             clan = None
 
         # Check clan authorization only if clan is not None
