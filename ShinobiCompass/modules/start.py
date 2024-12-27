@@ -3,6 +3,7 @@ from telegram.ext import CallbackContext
 from ShinobiCompass.database import db
 from ShinobiCompass.modules.sudo import is_owner_or_sudo
 from ShinobiCompass.modules.saveinfo import save_info
+from ShinobiCompass.modules.verify import require_verification
 
 # Reference to the new collection
 collection = db.message_collector  
@@ -41,7 +42,7 @@ async def empty_update(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text("✅ Update message cleared.")
 
 # Start command with updated message status
-@save_info
+@require_verification
 async def start(update: Update, context: CallbackContext) -> None:
     # Check if update.message exists (in case of callback queries)
     if not update.message:
