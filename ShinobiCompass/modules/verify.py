@@ -20,20 +20,20 @@ async def get_sudo_users_collection():
 async def is_verified(update, context):
     user_id = update.effective_user.id
     logger.info(f"Checking verification for user ID: {user_id}")
-    
+
     db = context.bot_data.get("db")
-    if db is None or "users" not in db.list_collection_names():
-        logger.error("Database is not initialized or 'users' collection is missing.")
+    if db is None:
+        logger.error("Database connection is not initialized.")
         return False
 
+    # Check if the user exists and if verified
     user_data = db["users"].find_one({"user_id": user_id})
-    if not user_data:
-        logger.info(f"User ID: {user_id} is not verified.")
-        return False
+    if user_data and user_data.get("verified", False):
+        logger.info(f"User ID: {user_id} is verified.")
+        return True
 
-    logger.info(f"User ID: {user_id} is verified.")
-    return True
-
+    logger.info(f"User ID: {user_id} is not verified.")
+    return False
 
 def require_verification(func):
     @wraps(func)
