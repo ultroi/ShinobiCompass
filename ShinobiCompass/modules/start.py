@@ -182,7 +182,6 @@ async def help_extra(update: Update, context: CallbackContext) -> None:
 
     buttons = [
         [InlineKeyboardButton("Back", callback_data="help_bm_commands")],
-        [InlineKeyboardButton("🏠 Back to Main Menu", callback_data="back_to_main")],
     ]
     reply_markup = InlineKeyboardMarkup(buttons)
     extra_help_text = (
