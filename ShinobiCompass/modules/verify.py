@@ -4,6 +4,7 @@ from ShinobiCompass.database import db  # Adjusted database import
 from ShinobiCompass.modules.sudo import is_owner_or_sudo
 from functools import wraps
 import logging
+import pytz
 import re
 from datetime import datetime, timedelta
 
@@ -70,11 +71,13 @@ def require_verification(func):
     return wrapper
 
 
-# Function to verify the user
-# Function to verify the user
+# Function to verify the user.
 async def verify_user(update: Update, context: CallbackContext) -> None:
     """Verify user based on inventory message."""
-    
+
+    # Set the timezone to IST (Indian Standard Time)
+    timezone = pytz.timezone('Asia/Kolkata')
+
     # Check if the message is coming from a private message
     if update.message.chat.type != 'private':
         await update.message.reply_text(
@@ -99,11 +102,12 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text("⚠️ The forwarded inventory message must come from user ID 5416991774.")
         return
 
-    # Check if the inventory message was sent within the last minute
-    message_time = update.message.reply_to_message.date
-    current_time = datetime.now()
-    time_diff = current_time - message_time
+    # Convert message_time to aware datetime with IST timezone
+    message_time = update.message.reply_to_message.date.replace(tzinfo=timezone)
+    current_time = datetime.now(timezone)
 
+    # Check if the inventory message was sent within the last minute
+    time_diff = current_time - message_time
     if time_diff > timedelta(minutes=1):
         await update.message.reply_text("⚠️ The inventory message is older than 1 minute. Please resend your inventory message.")
         return
@@ -138,9 +142,6 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         name = name_match.group(1).strip()
         level = int(level_match.group(1))
         clan = clan_match.group(1).strip()
-
-        # Get the current time
-        current_time = datetime.now()
 
         # Check clan authorization
         clan_auth = db.clans.find_one({"name": clan, "authorized": True})
