@@ -205,15 +205,6 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
     if task_end_time.tzinfo is None:  # If task_end_time is naive, make it aware
         task_end_time = IST.localize(task_end_time)
 
-    # Calculate the end of the current day (23:59:59)
-    end_of_day = now_ist.replace(hour=23, minute=59, second=59, microsecond=0)
-
-    # Calculate delay until the end of the current day
-    delay = (end_of_day - now_ist).total_seconds()
-
-    # Wait until the end of the day
-    await asyncio.sleep(delay)
-
     # Generate leaderboard
     leaderboard = []
     for key, value in task.items():
