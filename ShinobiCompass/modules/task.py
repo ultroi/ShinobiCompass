@@ -233,7 +233,6 @@ async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
     tasks_collection.delete_one({"_id": task['_id']})
 
 @require_verification
-@require_verification
 async def submit_inventory(update: Update, context: CallbackContext) -> None:
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
@@ -462,17 +461,27 @@ async def clear_tasks(update: Update, context: CallbackContext) -> None:
 
 @require_verification
 async def end_task(update: Update, context: CallbackContext) -> None:
+    # Check if the user is an admin
     if not await is_admin(update, context):
         await update.message.reply_text("Only admins can end tasks.")
         return
 
     chat_id = update.effective_chat.id
+    
+    # Fetch the active task for the chat
     task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$gt": datetime.now(IST)}})
+    
     if not task:
         await update.message.reply_text("No active task to end.")
         return
 
-    # Show leaderboard
+    # Mark the task as ended by setting the end_time to now
+    tasks_collection.update_one(
+        {"_id": task["_id"]},
+        {"$set": {"end_time": datetime.now(IST)}}  # Set the task's end time to the current time
+    )
+
+    # Show the leaderboard
     leaderboard = []
     for key, value in task.items():
         if key.startswith("finv_"):
@@ -486,19 +495,22 @@ async def end_task(update: Update, context: CallbackContext) -> None:
     # Sort leaderboard by glory difference in descending order
     leaderboard.sort(key=lambda x: x[1], reverse=True)
 
+    # Extract reward details
     reward_type = task['reward_type'].split()[-1]  # Assuming reward format like "100 coins"
+    reward_value = task['reward'].split()[0]
+
     leaderboard_text = f"🏆 <b>Task Leaderboard ({reward_type})</b> 🏆\n\n"
     
     for user_id, glory_diff in leaderboard:
         try:
             user = await context.bot.get_chat_member(chat_id, user_id)
-            reward_amount = int(task['reward'].split()[0]) * glory_diff
+            reward_amount = int(reward_value) * glory_diff
             leaderboard_text += f"👤 {user.user.first_name} (ID: {user_id}) - {reward_amount} {reward_type}\n"
         except Exception as e:
             print(f"Error fetching user {user_id}: {e}")
             leaderboard_text += f"👤 User {user_id} - {glory_diff} {reward_type}\n"
 
-    # Tag admins
+    # Tag admins in the message
     admins = await context.bot.get_chat_administrators(chat_id)
     admin_mentions = ' '.join([f"@{admin.user.username}" for admin in admins if admin.user.username])
     leaderboard_text += f"\n\nAdmins: {admin_mentions}"
@@ -510,6 +522,15 @@ async def end_task(update: Update, context: CallbackContext) -> None:
         text=leaderboard_text,
         parse_mode=telegram.constants.ParseMode.HTML,
     )
+
+    # Remove the task from the database as it is now ended
+    tasks_collection.delete_one({"_id": task["_id"]})
+
+    # Unpin all messages and pin the new leaderboard message
+    await context.bot.unpin_all_chat_messages(chat_id)
+    message = await context.bot.send_message(chat_id, leaderboard_text, parse_mode=telegram.constants.ParseMode.HTML)
+    await context.bot.pin_chat_message(chat_id, message.message_id)
+
 
 
 @require_verification
