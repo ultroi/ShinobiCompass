@@ -5,6 +5,7 @@ from telegram.ext import (
     CallbackContext,
     filters,
 )
+from ShinobiCompass.modules.saveinfo import save_info
 #from ShinobiCompass.modules.flood import flood_control
 
 # Configure logging
@@ -18,7 +19,7 @@ LEGENDARY_SHINOBIS = [
     "Shisui Uchiha", "Tsunade Senju", "Gaara", "Jiraiya", "Hiruzen Sarutobi",
     "Orochimaru", "Might Guy", "Kakashi Hatake", "Itachi Uchiha", "Minato Namikaze",
     "Madara Uchiha", "Hashirama Senju", "Tobirama Senju", "Mu", "Onoki",
-    "Gengetsu Hozuki", "A [3rd Raikage]", "Ay [4th Raikage]", "Mei Terumi", "Rasa",
+    "Gengetsu Hozuki", "A", "Ay", "Mei Terumi", "Rasa",
 ]
 NON_LEGENDARY_SHINOBIS = [
     "Ino Yamanaka", "Choji Akimichi", "Shikamaru Nara", "Rock Lee", "Neji Hyuga",
@@ -166,6 +167,7 @@ def analyze_message(message):
 
 
 # Command: /bm (manual analysis)
+@save_info
 async def bm(update: Update, _: CallbackContext) -> None:
     if update.message.reply_to_message:
         # Get the replied message content
@@ -188,6 +190,7 @@ async def bm(update: Update, _: CallbackContext) -> None:
         await update.message.reply_text("⚠️ Please reply to a valid black market message.")
 
 # Automatic analysis
+@save_info
 async def handle_message(update: Update, _: CallbackContext) -> None:
     if not update.message:
         return
