@@ -482,31 +482,12 @@ async def end_task(update: Update, context: CallbackContext) -> None:
         {"$set": {"end_time": datetime.now(IST)}}  # Set the task's end time to the current time
     )
 
-    # Show the leaderboard
-    leaderboard_text = await get_task_result(chat_id, task, context)
-    if leaderboard_text is None:
-        return
-
-    # Tag admins in the message
-    admins = await context.bot.get_chat_administrators(chat_id)
-    admin_mentions = ' '.join([f"@{admin.user.username}" for admin in admins if admin.user.username])
-    leaderboard_text += f"\n\nAdmins: {admin_mentions}"
-
-    # Edit the task message to indicate that it has ended and show the leaderboard
-    await context.bot.edit_message_text(
-        chat_id=chat_id,
-        message_id=task['message_id'],
-        text=leaderboard_text,
-        parse_mode=telegram.constants.ParseMode.HTML,
-    )
-
-    # Remove the task from the database as it is now ended
+    # Immediately call the delete_task_data function to handle the leaderboard and task cleanup
     await delete_task_data(task, chat_id, context)
 
-    # Unpin all messages and pin the new leaderboard message
-    await context.bot.unpin_all_chat_messages(chat_id)
-    message = await context.bot.send_message(chat_id, leaderboard_text, parse_mode=telegram.constants.ParseMode.HTML)
-    await context.bot.pin_chat_message(chat_id, message.message_id)
+    # Remove the task from the database (since it's already marked as completed in delete_task_data)
+    tasks_collection.delete_one({"_id": task["_id"]})
+
 
 @require_verification
 async def cancel_task(update: Update, context: CallbackContext) -> None:
