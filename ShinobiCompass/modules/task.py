@@ -1,5 +1,5 @@
 import pytz
-from datetime import datetime
+from datetime import datetime, timedelta
 from telegram import Update
 import telegram
 import asyncio
@@ -69,7 +69,7 @@ async def set_task(update: Update, context: CallbackContext) -> None:
 
         # Ensure times are in the future
         if start_time <= now_ist or end_time <= now_ist:
-            await update.message.reply_text("Start time and end time must be in the future.")
+            await update.message.reply_text("Start time and end time must be in the future.\n Bot only consider current day task. (12:00am - 11:59pm)")
             return
 
         # Ensure end time is later than start time
@@ -240,12 +240,18 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
     message_text = update.message.text
 
     # Extract the inventory type and task ID from the message
-    match = re.match(r"/(finv|linv) (\S+)", message_text)
+    match = re.match(r"/(finv|linv)(?:@[\w\d_]+)? (\S+)", message_text)
     if not match:
-        await update.message.reply_text("Invalid Format : Use /finv task_id (reply to inv message)\n Use /linv task_id")
+        await update.message.reply_text("Invalid Format : Use /finv (reply to inv message) For starting inventory \n Use /linv reply to ending inventory ")
         return
 
     inventory_type, task_id = match.groups()  # Extract inventory type (finv or linv) and task ID
+
+    # Find the task by task_id
+    task = tasks_collection.find_one({"task_id": task_id})
+    if not task:
+        await update.message.reply_text("Invalid task ID.")
+        return
 
     # Check if the command is used in a private message
     if update.effective_chat.type == 'private':
@@ -256,23 +262,7 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
 
         inventory_message = update.message.reply_to_message.text
 
-        # Find the task by unique ID
-        task = tasks_collection.find_one({"task_id": task_id})
-        if not task:
-            await update.message.reply_text("Invalid task ID.")
-            return
-
-        # Ensure the user is part of the group chat
-        try:
-            member = await context.bot.get_chat_member(task['chat_id'], user_id)
-            if member.status not in ['member', 'administrator', 'creator']:
-                await update.message.reply_text("You must be a member of the group chat to submit inventory.")
-                return
-        except telegram.error.BadRequest:
-            await update.message.reply_text("You must be a member of the group chat to submit inventory.")
-            return
-
-        # Verify the message is forwarded from the authorized bot (by sender ID)
+        # Ensure the message is forwarded from the authorized bot
         if hasattr(update.message.reply_to_message, 'forward_from') and update.message.reply_to_message.forward_from.id != 5416991774:
             await update.message.reply_text("The inventory message must be forwarded from the authorized bot.")
             return
@@ -302,12 +292,12 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
         if not task:
             await update.message.reply_text("No active task to submit inventory for.")
             return
-        
+
         # Verify the message is from the authorized bot (by sender ID)
         if update.message.reply_to_message.from_user.id != 5416991774:
             await update.message.reply_text("The inventory message must be from the authorized bot.")
             return
-        
+
         # Extract user ID and My Glory
         id_match = re.search(r"ID:\s*(\d+)", inventory_message)
         if not id_match or int(id_match.group(1)) != user_id:
@@ -325,10 +315,25 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
             return
         my_glory = int(glory_match.group(1))
 
+    # Handle task starting time and prevent premature inventory submission
+    if now_ist < task['start_time']:
+        await update.message.reply_text(f"Event will start soon at {task['start_time'].strftime('%Y-%m-%d %H:%M:%S')}. Please wait until then to submit your inventory.")
+        return
+
+    # Notify the user if they haven't submitted the final inventory (linv) as the task is nearing its end
+    if now_ist > task['end_time'] - timedelta(minutes=5):
+        if f"linv_{user_id}" not in task:
+            user = await context.bot.get_chat_member(task['chat_id'], user_id)
+            user_link = f"[{user.user.first_name}](tg://user?id={user_id})"
+            await context.bot.send_message(
+                user_id, 
+                f"⚠️ {user_link}, you haven't submitted your final inventory (ending inventory). Please submit it quickly! ⚠️"
+            )
+
     # Submit starting or ending inventory
     if inventory_type == "finv":
         if f"finv_{user_id}" in task:
-            await update.message.reply_text("Starting inventory has already been submitted.")
+            await update.message.reply_text("⚠️Starting inventory has already been submitted.⚠️")
             return
         
         # Update the task with starting inventory
@@ -336,8 +341,7 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
             {"_id": task['_id']},
             {"$set": {f"finv_{user_id}": my_glory}}
         )
-        
-        # Check if the update was successful
+
         if result.modified_count == 1:
             await update.message.reply_text("Starting inventory submitted successfully.")
         else:
@@ -346,32 +350,45 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
 
     elif inventory_type == "linv":
         if f"linv_{user_id}" in task:
-            await update.message.reply_text("Ending inventory has already been submitted.")
+            await update.message.reply_text("⚠️Ending inventory has already been submitted.⚠️")
             return
 
         # Ensure starting inventory is submitted first
         if f"finv_{user_id}" not in task:
             await update.message.reply_text("You must submit the starting inventory first.")
             return
-        
+
         # Update the task with ending inventory
         result = tasks_collection.update_one(
             {"_id": task['_id']},
             {"$set": {f"linv_{user_id}": my_glory}}
         )
 
-        # Check if the update was successful
         if result.modified_count == 1:
+            starting_inventory = task.get(f"finv_{user_id}")
+            ending_inventory = my_glory
+            delta = ending_inventory - starting_inventory
+
+            # Send a message in the user's PM with the results
+            await context.bot.send_message(
+                user_id,
+                f"Hello {user_id},\n\nHere is your inventory report:\n"
+                f"Starting Inventory: {starting_inventory}\n"
+                f"Ending Inventory: {ending_inventory}\n"
+                f"Change in Inventory: {delta}\n\n"
+                f"Thanks for participating!"
+            )
+
             await update.message.reply_text("Ending inventory submitted successfully.")
         else:
             await update.message.reply_text("Failed to submit ending inventory. Please try again.")
         return
 
     else:
-        await update.message.reply_text("Invalid inventory type. Use 'finv' for starting or 'linv' for ending inventory.") 
+        await update.message.reply_text("Invalid inventory type. Use 'finv' for starting or 'linv' for ending inventory.")
 
 
-# Show the leaderboard for the task
+
 async def taskresult(chat_id: int, context: CallbackContext) -> None:
     task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$lt": datetime.now(IST)}})
     if not task:
@@ -386,6 +403,10 @@ async def taskresult(chat_id: int, context: CallbackContext) -> None:
             linv = task.get(f"linv_{user_id}")
             if linv is not None:
                 leaderboard.append((user_id, linv - finv))
+
+    if not leaderboard:
+        await context.bot.send_message(chat_id, "No users participated in the event.")
+        return
 
     leaderboard.sort(key=lambda x: x[1], reverse=True)
 
@@ -448,16 +469,23 @@ async def end_task(update: Update, context: CallbackContext) -> None:
             finv = value
             linv = task.get(f"linv_{user_id}")
             if linv is not None:
-                leaderboard.append((user_id, linv - finv))
+                glory_diff = linv - finv
+                leaderboard.append((user_id, glory_diff))
 
+    # Sort leaderboard by glory difference in descending order
     leaderboard.sort(key=lambda x: x[1], reverse=True)
 
-    reward_type = task['reward'].split()[-1]
+    reward_type = task['reward'].split()[-1]  # Assuming reward format like "100 coins"
     leaderboard_text = f"🏆 <b>Task Leaderboard ({reward_type})</b> 🏆\n\n"
+    
     for user_id, glory_diff in leaderboard:
-        user = await context.bot.get_chat_member(chat_id, user_id)
-        reward_amount = int(task['reward'].split()[0]) * glory_diff
-        leaderboard_text += f"👤 {user.user.first_name} (ID: {user_id}) - {reward_amount} {reward_type}\n"
+        try:
+            user = await context.bot.get_chat_member(chat_id, user_id)
+            reward_amount = int(task['reward'].split()[0]) * glory_diff
+            leaderboard_text += f"👤 {user.user.first_name} (ID: {user_id}) - {reward_amount} {reward_type}\n"
+        except Exception as e:
+            print(f"Error fetching user {user_id}: {e}")
+            leaderboard_text += f"👤 User {user_id} - {glory_diff} {reward_type}\n"
 
     # Tag admins
     admins = await context.bot.get_chat_administrators(chat_id)
@@ -471,6 +499,7 @@ async def end_task(update: Update, context: CallbackContext) -> None:
         text=leaderboard_text,
         parse_mode=telegram.constants.ParseMode.HTML,
     )
+
 
 @require_verification
 async def cancel_task(update: Update, context: CallbackContext) -> None:
@@ -502,5 +531,25 @@ async def cancel_task(update: Update, context: CallbackContext) -> None:
     except telegram.error.BadRequest as e:
         print(f"Error while unpinning: {e}")
 
-    await update.message.reply_text("The task has been canceled successfully.")
-    
+    # Notify users who have started their inventory submission (finv submitted)
+    for user_id in task:
+        # Check if the user has submitted the starting inventory (finv)
+        if f"finv_{user_id}" in task:
+            # Check if the user has also submitted ending inventory (linv)
+            linv_submitted = f"linv_{user_id}" in task
+
+            # Craft the message based on their submission status
+            if linv_submitted:
+                message = "The task has been canceled. You have submitted both your starting and ending inventories."
+            else:
+                message = "The task has been canceled. You have submitted your starting inventory, but not the final inventory."
+
+            # Send the notification in the user's private chat
+            try:
+                await context.bot.send_message(user_id, message)
+            except Exception as e:
+                print(f"Failed to notify user {user_id}: {e}")
+
+    await update.message.reply_text("The task has been canceled successfully, and users have been notified.")
+
+
