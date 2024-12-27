@@ -95,55 +95,51 @@ DEFAULT_CLANS = ["Uzumaki", "Namikaze", "Uchiha", "Otsutsuki"]
 
 # Function to verify the user
 async def verify_user(update: Update, context: CallbackContext) -> None:
+    """Verify user based on inventory message."""
+    # Initialize user ID early
     user_id = update.effective_user.id
-    
-    # Set the timezone to IST (Indian Standard Time)
     timezone = pytz.timezone('Asia/Kolkata')
-
-    # Check if the message is coming from a private message
-    if update.message.chat.type != 'private':
-        await update.message.reply_text(
-            "⚠️ Verification only in a private message (PM) to me. I cannot verify users in group chats."
-        )
-        return
-
-    # Check if the database connection is initialized
-    if db is None:
-        await update.message.reply_text("⚠️ Database connection is not initialized.")
-        return
-
-    # Check if the message is a reply to an inventory message
-    if not update.message.reply_to_message:
-        await update.message.reply_text("⚠️ Please reply to your inventory message.")
-        return
-
-    inventory_message = update.message.reply_to_message.text
-
-    # Check if the forwarded message is from the required ID
-    if update.message.reply_to_message.forward_from and update.message.reply_to_message.forward_from.id != 5416991774:
-        await update.message.reply_text("⚠️ The forwarded inventory message must come from user ID 5416991774.")
-        return
-
-    # Convert the original message time to aware datetime with IST timezone
-    original_message_time = update.message.reply_to_message.date.replace(tzinfo=timezone)
-    current_time = datetime.now(timezone)
-
-    # Check if the inventory message was sent within the last minute (in seconds)
-    time_diff_seconds = (current_time - original_message_time).total_seconds()
     
-    # If the difference is more than 60 seconds, reject the verification
-    if time_diff_seconds < 60:
-        await update.message.reply_text("⚠️ The inventory message must be recent (within 1 minute).")
-        return
-
     try:
-        # Extract user ID from inventory message
+        # Check if the message is private
+        if update.message.chat.type != 'private':
+            await update.message.reply_text(
+                "⚠️ Verification only in a private message (PM) to me. I cannot verify users in group chats."
+            )
+            return
+
+        # Check if the database is connected
+        if db is None:
+            await update.message.reply_text("⚠️ Database connection is not initialized.")
+            return
+
+        # Check for a reply to the inventory message
+        if not update.message.reply_to_message:
+            await update.message.reply_text("⚠️ Please reply to your inventory message.")
+            return
+
+        inventory_message = update.message.reply_to_message.text
+
+        # Check the forwarded message source
+        if update.message.reply_to_message.forward_from and update.message.reply_to_message.forward_from.id != 5416991774:
+            await update.message.reply_text("⚠️ The forwarded inventory message must come from user ID 5416991774.")
+            return
+
+        # Time validation
+        original_message_time = update.message.reply_to_message.date.replace(tzinfo=timezone)
+        current_time = datetime.now(timezone)
+        time_diff_seconds = (current_time - original_message_time).total_seconds()
+        if time_diff_seconds > 60:
+            await update.message.reply_text("⚠️ The inventory message must be recent (within 1 minute).")
+            return
+
+        # Extract user ID from the inventory message
         id_match = re.search(r"┣ 🆔 ID[:：]?\s*(\d+)", inventory_message)
-        if not id_match or int(id_match.group(1)) != update.effective_user.id:
+        if not id_match or int(id_match.group(1)) != user_id:
             await update.message.reply_text("⚠️ The inventory message user ID does not match your Telegram ID.")
             return
 
-        # Extract other required fields
+        # Extract user details
         name_match = re.search(r"┣ 👤 Name[:：]?\s*(.+)", inventory_message)
         level_match = re.search(r"┣ 🎚️ Level[:：]?\s*(\d+)", inventory_message)
         clan_match = re.search(r"🏯 Clan[:：]?\s*(.+)", inventory_message)
@@ -176,7 +172,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
 
         # Update the user's data in the database (ensure this is async if using Motor)
         db.users.update_one(
-            {"user_id": update.effective_user.id},
+            {"user_id": user_id},
             {
                 "$set": {
                     "name": name,
@@ -192,17 +188,17 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         # Notify the user about their verification status
         if clan_auth is not None:
             await update.message.reply_text(
-                f"✅ {name} (ID: {update.effective_user.id}) has been verified as part of the {clan} clan!"
+                f"✅ {name} (ID: {user_id}) has been verified as part of the {clan} clan!"
             )
         else:
             await update.message.reply_text(
-                f"⚠️ {name} (ID: {update.effective_user.id}) is not authorized to use this bot. Clan '{clan}' is not authorized."
+                f"⚠️ {name} (ID: {user_id}) is not authorized to use this bot. Clan '{clan}' is not authorized."
             )
 
         # Send the player's data to the channel
         user = {
             'name': name,
-            'id': update.effective_user.id,
+            'id': user_id,
             'clan': clan,
             'level': level,
             'verified': clan_auth is not None
@@ -212,7 +208,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
             f"🌟 New User 🌟\n"
             f"👤 <b>Name:</b> {user['name']}\n"
             f"🆔 <b>ID:</b> <code>{user['id']}</code>\n"
-            f"🏯 <b>Clan:</b> {user['clan']}\n"
+            f"🏯 <b>Clan:</b> {user['clan'] or 'None'}\n"
             f"🎚️ <b>Level:</b> {user['level']}\n"
             f"🔗 <b>Link:</b> <a href='tg://user?id={user['id']}'>User Profile</a>\n"
             f"📅 <b>Joined At:</b> {current_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
@@ -227,7 +223,9 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         )
 
     except Exception as e:
+        logger.error(f"Verification error for user ID {user_id}: {str(e)}")
         await update.message.reply_text(f"⚠️ An error occurred while verifying the user: {str(e)}")
+
 
 
 
