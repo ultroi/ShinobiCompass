@@ -49,37 +49,30 @@ async def is_verified(update: Update, context: CallbackContext):
     return False
 
 
+# This decorator checks if the user is verified. If not, it asks the user to verify.
 async def require_verification(func):
     @wraps(func)
     async def wrapper(update: Update, context: CallbackContext, *args, **kwargs):
-        user_id = update.effective_user.id
-        user = db.users.find_one({"id": user_id})  # Replace with actual DB query
-        
-        if not user:
+        # Check if the user is verified (using asyncio.to_thread to run blocking DB operation)
+        is_verified_user = await is_verified(update, context)
+
+        if not is_verified_user:
             await update.message.reply_text(
-                "❌ User data not found. Please verify your account."
-            )
-            return  # Exit if the user data is not found
-
-        # Check verification status
-        verified = user.get("verified", False)
-
-        # Allow `/xp` and `/iseal` with a warning if not verified
-        if func.__name__ in ["xp_command", "iseal_command"]:
-            if not verified:
-                await update.message.reply_text(
-                    "⚠️ You are not verified, but you can still use this command. Verification is recommended for full access.\n /xp - To check your progress \n /iseal - to get about information sealing technique."
-                )
-            return await func(update, context, *args, **kwargs)
-
-        # Block all other commands for unverified users
-        if not verified:
-            await update.message.reply_text(
-                "⚠️ This command is restricted to verified users. Please verify your account to proceed."
+                "⚠️ Clan Verification Needed: Please send your inventory reply to /verify."
             )
             return
 
-        # Proceed if the user is verified
+        # If the user is verified, check if they are authorized (i.e., clan is authorized)
+        user_id = update.effective_user.id
+        user = db.users.find_one({"id": user_id})
+        
+        if not user or not user.get("verified", False):
+            await update.message.reply_text(
+                "⚠️ You are not authorized. Please make sure you have a valid clan authorization."
+            )
+            return
+
+        # Proceed to the original function if verified and authorized
         return await func(update, context, *args, **kwargs)
 
     return wrapper
