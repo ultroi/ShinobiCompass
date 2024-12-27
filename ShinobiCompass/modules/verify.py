@@ -95,7 +95,7 @@ DEFAULT_CLANS = ["Uzumaki", "Namikaze", "Uchiha", "Otsutsuki"]
 
 # Function to verify the user
 async def verify_user(update: Update, context: CallbackContext) -> None:
-    """Verify user based on inventory message."""
+    user_id = update.effective_user.id
     
     # Set the timezone to IST (Indian Standard Time)
     timezone = pytz.timezone('Asia/Kolkata')
