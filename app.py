@@ -87,7 +87,7 @@ application.add_handler(CommandHandler("set", set_constants))
 application.add_handler(CommandHandler("verify", verify_user))
 application.add_handler(CommandHandler("auth", auth))
 
-application.add_handler(CommandHandler("calc", calculate_conversion))
+application.add_handler(CommandHandler("convert", calculate_conversion))
 
 # Inventory submission handlers
 application.add_handler(CommandHandler("finv", submit_inventory))
