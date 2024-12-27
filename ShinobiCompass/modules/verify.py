@@ -10,18 +10,13 @@ logger = logging.getLogger(__name__)
 
 CHANNEL_ID = -1002254557222  # Your channel ID for notifications
 
+# MongoDB collection to store user information
+users_collection = db["users"]  # Collection to store user info
+
 # Function to get sudo users collection
 async def get_sudo_users_collection():
     if db:
         return db["sudo_users"]
-    else:
-        logger.error("Database connection is not initialized.")
-        return None
-
-# Function to get users collection
-async def get_users_collection():
-    if db:
-        return db["users"]
     else:
         logger.error("Database connection is not initialized.")
         return None
