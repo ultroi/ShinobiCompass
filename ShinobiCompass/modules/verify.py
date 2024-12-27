@@ -166,10 +166,6 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         # Check if the clan is authorized
         clan_auth = db.clans.find_one({"name": clan, "authorized": True}) if clan else None
 
-
-
-        
-        print(f"Updating user {update.effective_user.id} with verified status: {is_owner or clan_auth is not None}")
         # Update the user's data in the database (ensure this is async if using Motor)
         db.users.update_one(
             {"user_id": update.effective_user.id},
@@ -178,7 +174,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
                     "name": name,
                     "clan": clan,
                     "level": level,
-                    "verified": is_owner or clan_auth is not None,
+                    "verified": clan_auth is not None,
                     "joined_at": current_time.strftime('%Y-%m-%d %H:%M:%S')
                 }
             },
@@ -197,6 +193,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
 
     except Exception as e:
         await update.message.reply_text(f"⚠️ An error occurred while verifying the user: {str(e)}")
+
 
 
 # Function to authorize a clan
