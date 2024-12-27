@@ -1,5 +1,5 @@
 from telegram import Update
-from telegram import ParseMode
+from telegram.constants import ParseMode
 from telegram.ext import CallbackContext, ContextTypes
 from ShinobiCompass.database import db  # Adjusted database import
 from ShinobiCompass.modules.sudo import is_owner_or_sudo
