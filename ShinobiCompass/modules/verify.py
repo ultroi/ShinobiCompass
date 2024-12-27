@@ -220,7 +220,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         await context.bot.send_message(
             chat_id=CHANNEL_ID,  # Replace with your actual channel ID
             text=channel_message,
-            parse_mode=ParseMode.HTML
+            parse_mode=telegram.constants.ParseMode.HTML
         )
 
     except Exception as e:
