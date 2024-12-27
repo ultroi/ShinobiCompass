@@ -82,10 +82,13 @@ def require_verification(func):
     return wrapper
 
 
-# Function to verify the user.
+# Default list of clans (initially unauthorized)
+DEFAULT_CLANS = ["Uzumaki", "Namikaze", "Uchiha", "Otsutsuki"]
+
+# Function to verify the user
 async def verify_user(update: Update, context: CallbackContext) -> None:
     """Verify user based on inventory message."""
-
+    
     # Set the timezone to IST (Indian Standard Time)
     timezone = pytz.timezone('Asia/Kolkata')
 
@@ -156,15 +159,13 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         level = int(level_match.group(1))
         clan = clan_match.group(1).strip()
 
-        # Check clan authorization
         # Handle the case when clan is None (No clan specified)
         if not clan or clan.lower() == "none":
             clan = None
 
-        # Check clan authorization only if clan is not None
-        clan_auth = None
-        if clan:
-            clan_auth = db.clans.find_one({"name": clan, "authorized": True})
+        # Check if the clan is authorized
+        clan_auth = db.clans.find_one({"name": clan, "authorized": True}) if clan else None
+
         is_owner = await is_owner_or_sudo(update)
 
         # If is_owner_or_sudo returns None, default to False
@@ -199,32 +200,50 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
     except Exception as e:
         await update.message.reply_text(f"⚠️ An error occurred while verifying the user: {str(e)}")
 
-# Function to authorize a user or clan
+
+# Function to authorize a clan
 async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Authorize a clan or verify a specific user."""
+    """Authorize a clan."""
     if not await is_owner_or_sudo(update):
         await update.message.reply_text("⚠️ Only owners or sudo users can perform this action.")
         return
 
     if not context.args:
-        await update.message.reply_text("⚠️ Please provide a clan name or user ID.")
+        await update.message.reply_text("⚠️ Please provide a clan name to authorize.")
         return
 
-    input_value = context.args[0]
+    input_value = context.args[0].strip()
 
-    if input_value.isdigit():
-        user_id = int(input_value)
-        user = db.users.find_one({"id": user_id})
-        if not user:
-            await update.message.reply_text(f"⚠️ No user found with ID {user_id}.")
-            return
+    # Check if the clan is in the default list
+    if input_value in DEFAULT_CLANS:
+        await update.message.reply_text(f"✅ Clan '{input_value}' is already authorized by default.")
+        return
 
-        db.users.update_one({"id": user_id}, {"$set": {"verified": True}})
-        await update.message.reply_text(f"✅ User [{user['name']}](tg://user?id={user_id}) (ID: {user_id}) has been verified.", parse_mode="Markdown")
-    else:
-        clan_name = input_value
-        db.clans.update_one({"name": clan_name}, {"$set": {"authorized": True}}, upsert=True)
-        await update.message.reply_text(f"✅ Clan '{clan_name}' has been authorized.")
+    db.clans.update_one({"name": input_value}, {"$set": {"authorized": True}}, upsert=True)
+    await update.message.reply_text(f"✅ Clan '{input_value}' has been authorized.")
+
+
+# Function to unauthorize a clan
+async def unauth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Unauthorize a clan."""
+    if not await is_owner_or_sudo(update):
+        await update.message.reply_text("⚠️ Only owners or sudo users can perform this action.")
+        return
+
+    if not context.args:
+        await update.message.reply_text("⚠️ Please provide a clan name to unauthorize.")
+        return
+
+    input_value = context.args[0].strip()
+
+    # Check if the clan is in the default list
+    if input_value in DEFAULT_CLANS:
+        await update.message.reply_text(f"⚠️ Clan '{input_value}' cannot be unauthenticated because it's a default authorized clan.")
+        return
+
+    db.clans.update_one({"name": input_value}, {"$set": {"authorized": False}})
+    await update.message.reply_text(f"✅ Clan '{input_value}' has been unauthorized.")
+
 
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Display information about a user."""
