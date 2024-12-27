@@ -31,67 +31,86 @@ async def set_task(update: Update, context: CallbackContext) -> None:
         return
 
     try:
-        args = context.args
-        if len(args) < 2:
-            raise ValueError("Insufficient arguments provided.")
-
-        # Combine all arguments for easier parsing
-        command_input = ' '.join(args)
-
-        # Use regex to parse start-end time, description, and reward
-        match = re.match(
-            r"(\d{1,2}:\d{2}(?:am|pm)-\d{1,2}:\d{2}(?:am|pm))\s+(.+?)\s+\((.+)\)",
-            command_input,
-            re.IGNORECASE
+    args = context.args
+    if len(args) < 2:
+        await update.message.reply_text(
+            "Invalid format.\nUsage: /task starttime-endtime description (reward)\n"
+            "Example: /task 9:40pm-10:00pm Do 100 glory (19 coins/glory)"
         )
-        if not match:
-            raise ValueError(
-                "Invalid format.\nUsage: /task starttime-endtime description (reward)\n"
-                "Example: /task 9:40pm-10:00pm Do 100 glory (19 coins/glory)"
-            )
+        return
 
-        time_range, description, reward = match.groups()
+    # Combine all arguments for easier parsing
+    command_input = ' '.join(args)
 
-        start_time_str, end_time_str = time_range.split('-')
-
-        now_ist = datetime.now(IST)
-        current_date = now_ist.date()
-
-        # Parse start and end times
-        start_time = IST.localize(
-            datetime.combine(current_date, datetime.strptime(start_time_str, '%I:%M%p').time())
+    # Use regex to parse start-end time, description, and reward
+    match = re.match(
+        r"(\d{1,2}:\d{2}(?:am|pm)-\d{1,2}:\d{2}(?:am|pm))\s+(.+?)\s+\((.+)\)",
+        command_input,
+        re.IGNORECASE
+    )
+    if not match:
+        await update.message.reply_text(
+            "Invalid format.\nUsage: /task starttime-endtime description (reward)\n"
+            "Example: /task 9:40pm-10:00pm Do 100 glory (19 coins/glory)"
         )
-        end_time = IST.localize(
-            datetime.combine(current_date, datetime.strptime(end_time_str, '%I:%M%p').time())
+        return
+
+    time_range, description, reward = match.groups()
+
+    start_time_str, end_time_str = time_range.split('-')
+
+    now_ist = datetime.now(IST)
+    current_date = now_ist.date()
+
+    # Parse start and end times
+    start_time = IST.localize(
+        datetime.combine(current_date, datetime.strptime(start_time_str, '%I:%M%p').time())
+    )
+    end_time = IST.localize(
+        datetime.combine(current_date, datetime.strptime(end_time_str, '%I:%M%p').time())
+    )
+
+    # Ensure valid time ranges
+    if start_time.date() != now_ist.date() or end_time.date() != now_ist.date():
+        await update.message.reply_text("Start and end times must be on the current day.")
+        return
+
+    if start_time <= now_ist or end_time <= now_ist:
+        await update.message.reply_text(
+            "Start and end times must be in the future.\n"
+            "The bot only supports tasks for the current day (12:00am - 11:59pm)."
         )
+        return
 
-        # Ensure valid time ranges
-        if start_time.date() != now_ist.date() or end_time.date() != now_ist.date():
-            raise ValueError("Start and end times must be on the current day.")
+    if end_time <= start_time:
+        await update.message.reply_text("End time must be later than the start time.")
+        return
 
-        if start_time <= now_ist or end_time <= now_ist:
-            raise ValueError(
-                "Start and end times must be in the future.\n"
-                "Bot only supports tasks for the current day (12:00am - 11:59pm)."
-            )
+    chat_id = update.effective_chat.id
 
-        if end_time <= start_time:
-            raise ValueError("End time must be later than start time.")
+    # Check for an existing active task
+    existing_task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$gt": now_ist}})
+    if existing_task:
+        await update.message.reply_text(
+            "A task is already active for today. Wait until the current task ends before creating a new one."
+        )
+        return
 
-        chat_id = update.effective_chat.id
+    # Continue with task creation...
 
-        # Check for an existing active task
-        existing_task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$gt": now_ist}})
-        if existing_task:
-            await update.message.reply_text(
-                "A task is already active for today. Wait until the current task ends before creating a new one."
-            )
-            return
+except Exception as e:
+    await update.message.reply_text(
+        f"An error occurred: {str(e)}. Please make sure the task format is correct."
+    )
+
 
         # Validate reward format
         reward_match = re.match(r"(\d+)\s*(gems|tokens|coins\/glory)", reward, re.IGNORECASE)
         if not reward_match:
-            raise ValueError("Invalid reward format. Use '2 gems', '3 tokens', or '100 coins/glory'.")
+            await update.message.reply_text(
+                "Invalid reward format. Use '2 gems', '3 tokens', or '100 coins/glory'."
+            )
+            return
 
         reward_value, reward_type = reward_match.groups()
 
