@@ -166,11 +166,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         # Check if the clan is authorized
         clan_auth = db.clans.find_one({"name": clan, "authorized": True}) if clan else None
 
-        is_owner = await is_owner_or_sudo(update)
 
-        # If is_owner_or_sudo returns None, default to False
-        if is_owner is None:
-            is_owner = False
 
         
         print(f"Updating user {update.effective_user.id} with verified status: {is_owner or clan_auth is not None}")
