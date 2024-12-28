@@ -35,6 +35,13 @@ async def set_task(update: Update, context: CallbackContext) -> None:
         chat_id = update.effective_chat.id
         bot_member = await context.bot.get_chat_member(chat_id, context.bot.id)
 
+        # Check if the bot has admin status
+        if bot_member.status != "administrator":
+            await update.message.reply_text(
+            "The bot needs to be an administrator to manage tasks. Please grant admin rights and try again."
+            )
+            return
+
         # Check if the bot has admin rights
         if not bot_member.can_pin_messages or not bot_member.can_edit_messages:
             await update.message.reply_text(
