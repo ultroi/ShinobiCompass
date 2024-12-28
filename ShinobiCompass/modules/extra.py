@@ -70,7 +70,7 @@ async def calculate_xp_info(inventory_text):
     except Exception as e:
         return f"Error processing inventory: {str(e)}"
 
-
+@require_verification
 async def xp_command(update: Update, context: CallbackContext):
     if update.message.reply_to_message:
         # Get the inventory text from the replied message
@@ -83,7 +83,7 @@ async def xp_command(update: Update, context: CallbackContext):
     else:
         await update.message.reply_text("Please reply to an inventory message to get XP details.", parse_mode="HTML")
 
-
+@require_verification
 async def iseal_command(update: Update, context: CallbackContext):
     response = """
 <b>🍃 Naruto Sealing Techniques 🍃</b>
