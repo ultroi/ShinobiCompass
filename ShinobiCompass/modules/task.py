@@ -24,7 +24,6 @@ async def is_admin(update: Update, context: CallbackContext) -> bool:
 
 async def generate_task_id(chat_id: int) -> str:
     return str(uuid.uuid4().int)[:5]
-
 @require_verification
 async def set_task(update: Update, context: CallbackContext) -> None:
     if not await is_admin(update, context):
@@ -32,25 +31,6 @@ async def set_task(update: Update, context: CallbackContext) -> None:
         return
 
     try:
-        chat_id = update.effective_chat.id
-        bot_member = await context.bot.get_chat_member(chat_id, context.bot.id)
-
-        # Check if the bot has admin status
-        if bot_member.status != "administrator":
-            await update.message.reply_text(
-            "The bot needs to be an administrator to manage tasks. Please grant admin rights and try again."
-            )
-            return
-
-        # # Check required permissions
-        # if not bot_member.can_pin_messages:
-        #     await update.message.reply_text("The bot needs permission to pin messages.")
-        #     return
-
-        # if not bot_member.can_edit_messages:
-        #     await update.message.reply_text("The bot needs permission to edit messages.")
-        #     return
-
         args = context.args
         if len(args) < 2:
             await update.message.reply_text(
@@ -59,7 +39,10 @@ async def set_task(update: Update, context: CallbackContext) -> None:
             )
             return
 
+        # Combine all arguments for easier parsing
         command_input = ' '.join(args)
+
+        # Use regex to parse start-end time, description, and reward
         match = re.match(
             r"(\d{1,2}:\d{2}(?:am|pm)-\d{1,2}:\d{2}(?:am|pm))\s+(.+?)\s+\((.+)\)",
             command_input,
@@ -73,11 +56,13 @@ async def set_task(update: Update, context: CallbackContext) -> None:
             return
 
         time_range, description, reward = match.groups()
+
         start_time_str, end_time_str = time_range.split('-')
 
         now_ist = datetime.now(IST)
         current_date = now_ist.date()
 
+        # Parse start and end times
         start_time = IST.localize(
             datetime.combine(current_date, datetime.strptime(start_time_str, '%I:%M%p').time())
         )
@@ -85,23 +70,46 @@ async def set_task(update: Update, context: CallbackContext) -> None:
             datetime.combine(current_date, datetime.strptime(end_time_str, '%I:%M%p').time())
         )
 
-        if start_time <= now_ist or end_time <= start_time:
-            await update.message.reply_text("Start time must be in the future and before the end time.")
+        # Ensure valid time ranges
+        if start_time.date() != now_ist.date() or end_time.date() != now_ist.date():
+            await update.message.reply_text("Start and end times must be on the current day.")
             return
 
+        if start_time <= now_ist or end_time <= now_ist:
+            await update.message.reply_text(
+                "Start and end times must be in the future.\n"
+                "The bot only supports tasks for the current day (12:00am - 11:59pm)."
+            )
+            return
+
+        if end_time <= start_time:
+            await update.message.reply_text("End time must be later than the start time.")
+            return
+
+        chat_id = update.effective_chat.id
+
+        # Check for an existing active task
         existing_task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$gt": now_ist}})
         if existing_task:
-            await update.message.reply_text("A task is already active. Wait for it to end.")
+            await update.message.reply_text(
+                "A task is already active for today. Wait until the current task ends before creating a new one."
+            )
             return
 
+        # Validate reward format
         reward_match = re.match(r"(\d+)\s*(gems|tokens|coins\/glory)", reward, re.IGNORECASE)
         if not reward_match:
-            await update.message.reply_text("Invalid reward format. Use '2 gems', '3 tokens', or '100 coins/glory'.")
+            await update.message.reply_text(
+                "Invalid reward format. Use '2 gems', '3 tokens', or '100 coins/glory'."
+            )
             return
 
         reward_value, reward_type = reward_match.groups()
+
+        # Generate a unique task ID
         task_id = await generate_task_id(chat_id)
 
+        # Save task to database
         task = {
             "task_id": task_id,
             "chat_id": chat_id,
@@ -115,25 +123,59 @@ async def set_task(update: Update, context: CallbackContext) -> None:
         }
         tasks_collection.insert_one(task)
 
+        # Prepare message content
         message_text = (
-            f"<b><u>❄️ Today's Task ❄️</u></b>\n"
-            f"<b>Task ID:</b> <code>{task_id}</code>\n"
-            f"<b>Time:</b> <i>{start_time_str} - {end_time_str}</i>\n"
-            f"<b>Description:</b> {description}\n"
-            f"<b>Reward:</b> {reward_value} {reward_type.lower()}\n\n"
-            "Get ready! Task begins soon."
+            f"<b><u>❄️📝 Today's Task ❄️</u></b>\n"
+            f"<b>Task ID:</b> <code>{task_id}</code>\n\n"
+            f"<b>Task Time:</b> <i>{start_time_str} - {end_time_str}</i>\n\n"
+            f"<b>Description:</b> <i>{description}</i>\n"
+            f"<b>Reward:</b> <i>{reward_value} {reward_type.lower()}</i>\n\n"
+            "☃️ The task will begin shortly. Prepare yourself for the icy challenge ahead! ☃️"
         )
-        message = await context.bot.send_message(chat_id, text=message_text, parse_mode=telegram.constants.ParseMode.HTML)
+
+        # Send the initial task message
+        message = await context.bot.send_message(chat_id=chat_id, text=message_text, parse_mode=telegram.constants.ParseMode.HTML)
+
+        # Update task with message ID
         tasks_collection.update_one({"task_id": task_id}, {"$set": {"message_id": message.message_id}})
+
+        # Pin the task message
         await context.bot.pin_chat_message(chat_id, message.message_id)
 
-        # Schedule start and cleanup tasks using a scheduler like APScheduler
-        schedule_task_updates(context, task, start_time, end_time)
+        # Schedule the task for editing the message when the task starts
+        delay = (start_time - now_ist).total_seconds()  # Calculate the delay until the start time
+        await asyncio.sleep(delay)  # Wait for the task to start
+
+        # After the delay, edit the message
+        updated_message_text = (
+            f"<b><u>📝 Today's Task ❄️</u></b>\n\n"
+            f"<b>Task ID:</b> <i>{task_id}</i>\n"
+            f"<b>Task Time:</b> <i>{start_time_str} - {end_time_str}</i>\n\n"
+            f"<b>Description:</b> <i>{description}</i>\n"
+            f"<b>Reward:</b> <i>{reward_value} {reward_type.lower()}</i>\n\n"
+            f"<b>How to Participate:</b>\n"
+            f"1️⃣ <b>/finv</b> task_id — Submit your starting inventory.\n"
+            f"2️⃣ <b>/linv</b> task_id — Submit your last inventory.\n"
+            f"🌨️🕒 Make sure to submit your participation before the task expires!"
+        )
+
+        # Edit the message with participation details
+        await context.bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=message.message_id,
+            text=updated_message_text,
+            parse_mode=telegram.constants.ParseMode.HTML
+        )
+
+        # Schedule the task to delete data after it ends
+        asyncio.create_task(delete_task_data(context, task, chat_id))
+
+    except ValueError as e:
+        await update.message.reply_text(str(e))
 
     except Exception as e:
-        print(f"Error: {e}")
-        await update.message.reply_text("An error occurred. Please try again.")
-
+        print(f"Unexpected error: {e}")
+        await update.message.reply_text("An error occurred while creating the task. Please check the format and try again.")
 
 
 async def edit_task_message(
