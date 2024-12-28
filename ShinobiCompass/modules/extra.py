@@ -129,6 +129,7 @@ TOKENS_TO_GEMS = 20  # 1 Token = 20 Gems
 STOCKS_TO_TOKENS = 15  # 1 Stock = 15 Tokens
 STOCKS_TO_GEMS = 300  # 1 Stock = 300 Gems
 COINS_TO_STOCK = 600000  # 1 Stock = 600,000 Coins
+TOKEN_TAX_PER_STOCK = 2
 
 # Conversion Functions
 def coins_to_gems(coins: int) -> int:
