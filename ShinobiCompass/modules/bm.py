@@ -141,6 +141,18 @@ def analyze_message(message):
                             f"   📈 <b>Expected Price:</b> {expected_price_stocks:.2f} stocks ({expected_price_tokens} tokens)\n\n"
                         )
 
+            # Check for "Token" section (Token items)
+            elif section == "Rare" and "token" in item.lower():
+                expected_price_gems = quantity * TOKEN_TO_GEM
+                expected_price_stocks = expected_price_gems / STOCK_TO_GEM
+                if price < expected_price_stocks:
+                    profit_deals.append(
+                        f"<b>Token:</b> {item}\n"
+                        f"   💸 <b>Offer Price:</b> {price:.2f} stocks\n"
+                        f"   📈 <b>Expected Price:</b> {expected_price_stocks:.2f} stocks ({expected_price_gems} gems)\n\n"
+
+                    )
+
             # Check for Common section (Coins and Gems)
             elif section == "Common":
                 if "coins" in item.lower():
