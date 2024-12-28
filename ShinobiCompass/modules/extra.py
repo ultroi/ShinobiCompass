@@ -183,8 +183,8 @@ async def calc(update: Update, context: CallbackContext) -> None:
     # Parse the input command
     if len(context.args) != 2:
         await update.message.reply_text(
-            "Usage: /calc `amount` `from_unit`-`to_unit`\n"
-            "Example: /calc 100 coins-tokens"
+            "Usage: /cal `amount` `from_unit`-`to_unit`\n"
+            "Example: /cal 100 coins-tokens"
         )
         return
 
@@ -199,7 +199,7 @@ async def calc(update: Update, context: CallbackContext) -> None:
     match = re.match(r"([a-z]+)-([a-z]+)", conversion_type.lower())
     if not match:
         await update.message.reply_text(
-            "Invalid conversion format. Usage: /calc <amount> <from_unit>-<to_unit>"
+            "Invalid conversion format. Usage: /cal <amount> <from_unit>-<to_unit>"
         )
         return
 
