@@ -593,11 +593,10 @@ async def cancel_task(update: Update, context: CallbackContext) -> None:
 
 
 
+@require_verification
 async def check_current_tasks(update: Update, context: CallbackContext) -> None:
-    user_id = update.effective_user.id
-
     # Check if the user is a sudo or owner
-    if not await is_owner_or_sudo(user_id):
+    if not await is_owner_or_sudo(update):  # Pass the Update object
         await update.message.reply_text("None")
         return
 
@@ -622,12 +621,12 @@ async def check_current_tasks(update: Update, context: CallbackContext) -> None:
 
         response += (
             f"┏━━━━━━━━━━━━━━━━\n"
-            f"┣ <b>Group Name:</b> {group_name}\n" 
-            f"┣ <b>Group ID:</b> <code>{group_id}</code>\n"
             f"┣ <b>Task ID:</b> {task_id}\n"
             f"┣ <b>Task Message:</b> {task_message}\n"
             f"┣ <b>Start Time:</b> {start_time}\n"
             f"┣ <b>End Time:</b> {end_time}\n"
+            f"┣ <b>Group Name:</b> {group_name}\n"
+            f"┣ <b>Group ID:</b> <code>{group_id}</code>\n"
             f"━━━━━━━━━━━━━━━━\n\n"
         )
 
@@ -637,6 +636,7 @@ async def check_current_tasks(update: Update, context: CallbackContext) -> None:
         parse_mode=telegram.constants.ParseMode.HTML,
         disable_web_page_preview=True
     )
+
 
 
 
