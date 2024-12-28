@@ -178,24 +178,38 @@ async def set_task(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text("An error occurred while creating the task. Please check the format and try again.")
 
 
-async def edit_task_message(context: CallbackContext, chat_id: int, message_id: int, task_id: int, start_time_str: str, end_time_str: str, description: str, reward_value: int, reward_type: str, delay: float):
+async def edit_task_message(context: CallbackContext, chat_id: int, message_id: int, task_id: int, start_time_str: str, end_time_str: str, description: str, reward_value: int, reward_type: str, delay: float, pin=False):
     # Calculate task duration and wait until the task ends
     now_ist = datetime.now(IST)
     task_end_time = IST.localize(datetime.combine(now_ist.date(), datetime.strptime(end_time_str, '%I:%M%p').time()))
     task_duration = (task_end_time - now_ist).total_seconds()
 
+    # Wait until the task end time is reached (sleeping until the task ends)
     await asyncio.sleep(task_duration)
 
-    # Edit the message to indicate the task has ended
+    # Prepare the message text
+    task_message_text = (
+        f"<b><u>🔴 Task Has Ended 🔴</u></b>\n\n"
+        "Thank you for your participation 🙏\n\n"
+        f"<b>Task ID:</b> {task_id}\n"
+        f"<b>Description:</b> {description}\n"
+        f"<b>Reward:</b> {reward_value} {reward_type}\n"
+        f"<b>Start Time:</b> {start_time_str}\n"
+        f"<b>End Time:</b> {end_time_str}\n"
+    )
+
+    # Edit the task message
     await context.bot.edit_message_text(
         chat_id=chat_id,
         message_id=message_id,
-        text=(
-            f"<b><u>🔴 Task Has Ended 🔴</u></b>\n\n"
-            "Thank you for your participation 🙏"
-        ),
+        text=task_message_text,
         parse_mode=telegram.constants.ParseMode.HTML
     )
+
+    # Pin the message if the 'pin' argument is True
+    if pin:
+        await context.bot.pin_chat_message(chat_id, message_id=message_id)
+
 
 
 async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
