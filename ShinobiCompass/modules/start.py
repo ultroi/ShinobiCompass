@@ -117,7 +117,6 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
             "  Create a new task for today with a specific name and reward format: <code>'coins', 'tokens', 'gems', or 'glory'</code>.\n\n"
             "• <b>Ensure Reward must be in bracket</b> e.g: (2 gems/glory)\n"
             "• <b>Ensure that the task command must be sent at least 1 minute before the task time</b>\n\n"
-            "• <b>/endtask</b> Used to end the current active task for the day.\n"
             "• <b>/canceltask</b> Cancels the current active task before it ends.\n\n"
             "📅 <b>Details:</b>\n"
             "• Tasks expire at <b>midnight IST</b> Valid Time : 12:00am - 11:59pm.\n"
@@ -152,6 +151,7 @@ async def help_callback_handler(update: Update, context: CallbackContext) -> Non
         reply_markup = InlineKeyboardMarkup(buttons)
         extra_help_text = (
             "👾<b>     Extra  </b>\n\n"
+            "🔸 <b>/cal</b> - Usage: /calc <amount> <from_unit>-<to_unit>\nExample: /calc 100 coins-tokens\n"
             "🔸 <b>/iseal</b> - Check info about sealing techniques.\n"
             "🔸 <b>/xp</b> - View how much exploration is left and the next level-up reward.\n"
         )
