@@ -128,9 +128,12 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
         # Check if the message is recent (within 1 minute)
         original_message_time = update.message.reply_to_message.date.replace(tzinfo=timezone)
         current_time = datetime.now(timezone)
-        time_diff_seconds = (current_time - original_message_time).total_seconds()
 
-        if time_diff_seconds > 60:
+        # Check if the inventory message was sent within the last minute (in seconds)
+        time_diff_seconds = (current_time - original_message_time).total_seconds()
+    
+        # If the difference is more than 60 seconds, reject the verification
+        if time_diff_seconds < 60:
             await update.message.reply_text("⚠️ The inventory message must be recent (within 1 minute).")
             return
 
