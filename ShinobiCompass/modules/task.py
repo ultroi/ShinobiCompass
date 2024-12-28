@@ -405,12 +405,14 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
             # Send a message in the user's PM with the results
             await context.bot.send_message(
                 user_id,
-                f"Hello {user_id},\n\nHere is your inventory report:\n"
-                f"Starting Inventory: {starting_inventory}\n"
-                f"Ending Inventory: {ending_inventory}\n"
-                f"Change in Inventory: {delta}\n\n"
-                f"Thanks for participating!"
+                f"<b>👋 Hello {user_id},</b>\n\n"
+                f"<u>📊 Here is your inventory report:</u>\n\n"
+                f"<b>💎 First Inventory:</b> {starting_inventory}\n"
+                f"<b>💎 Last Inventory:</b> {ending_inventory}\n"
+                f"<b>🔼 Total Grind:</b> {delta}\n\n"
+                f"<i>🙏 Thanks for participating! Wait for Task Result to check your reward.</i>",
             )
+
 
             await update.message.reply_text("Ending inventory submitted successfully.")
         else:
