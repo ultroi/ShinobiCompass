@@ -8,24 +8,33 @@ SUDO_USERS_COLLECTION = "sudo_users"
 
 # Helper function to check if the user is the owner
 async def is_owner(update: Update) -> bool:
-    if update.message and update.message.from_user:
-        return update.message.from_user.id == OWNER_ID  # Compare with OWNER_ID
-    return False  # Return False if update.message is None or from_user is None
+    """Check if the user initiating the update is the owner."""
+    if update.effective_user:  # Use `effective_user` for broader compatibility
+        return update.effective_user.id == OWNER_ID
+    return False
 
 # Helper function to check if the user is the owner or a sudo user.
+async def is_owner(update: Update) -> bool:
+    """Check if the user initiating the update is the owner."""
+    if update.effective_user:  # Use `effective_user` for broader compatibility
+        return update.effective_user.id == OWNER_ID
+    return False
+
+# Helper function to check if the user is the owner or a sudo user
 async def is_owner_or_sudo(update: Update) -> bool:
-    user_id = update.message.from_user.id
-    
+    """Check if the user is the owner or a sudo user."""
+    if not update.effective_user:  # Ensure `effective_user` exists
+        return False
+
+    user_id = update.effective_user.id
+
     # Check if the user is the owner
     if user_id == OWNER_ID:
         return True
 
     # Check if the user is a sudo user by querying MongoDB
     sudo_user = db[SUDO_USERS_COLLECTION].find_one({"user_id": user_id})
-    if sudo_user:
-        return True
-    
-    return False
+    return bool(sudo_user)
 
 
 # Command to add a sudo user
