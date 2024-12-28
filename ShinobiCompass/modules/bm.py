@@ -6,7 +6,7 @@ from telegram.ext import (
     filters,
 )
 
-#from ShinobiCompass.modules.flood import flood_control
+from ShinobiCompass.modules.flood import flood_control
 from ShinobiCompass.modules.verify import require_verification
 
 # Configure logging
@@ -168,6 +168,7 @@ def analyze_message(message):
 
 
 # Command: /bm (manual analysis)
+@flood_control
 @require_verification
 async def bm(update: Update, _: CallbackContext) -> None:
     if update.message.reply_to_message:
