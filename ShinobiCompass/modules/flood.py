@@ -33,8 +33,8 @@ def flood_control(func):
             users_collection.insert_one(user_data)
 
         # Check if the user is blocked
-        if user_data["block_end_time"]:
-            block_end_time = user_data["block_end_time"]
+        if user_data["end_time"]:
+            block_end_time = user_data["end_time"]
             if current_time < block_end_time:
                 remaining_time = int((block_end_time - current_time).total_seconds())
                 await update.message.reply_text(
