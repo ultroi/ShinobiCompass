@@ -1,6 +1,7 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
 import re
+from ShinobiCompass.modules.verify import require_verification
 
 async def calculate_xp_info(inventory_text):
     try:
@@ -169,6 +170,7 @@ def stocks_to_gems(stocks: int) -> int:
     return stocks * STOCKS_TO_GEMS
 
 # Command to handle calculations
+@require_verification
 async def calc(update: Update, context: CallbackContext) -> None:
     # Parse the input command
     if len(context.args) != 2:
