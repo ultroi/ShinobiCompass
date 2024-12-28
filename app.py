@@ -22,6 +22,7 @@ from ShinobiCompass.modules.task import (
     submit_inventory,
     taskresult,
     cancel_task,
+    check_current_tasks,
 )
 from ShinobiCompass.modules.extra import xp_command, iseal_command, calc
 from ShinobiCompass.modules.flood import floods, set_constants
@@ -77,6 +78,8 @@ application.add_handler(CommandHandler("task", set_task))
 application.add_handler(CommandHandler("endtask", end_task))
 application.add_handler(CommandHandler("clearall", clear_tasks))
 application.add_handler(CommandHandler("canceltask", cancel_task))
+application.add_handler(CommandHandler("activetasks", check_current_tasks))
+
 
 application.add_handler(CommandHandler("xp", xp_command))
 application.add_handler(CommandHandler("iseal", iseal_command))
