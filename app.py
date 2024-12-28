@@ -25,7 +25,7 @@ from ShinobiCompass.modules.task import (
 )
 from ShinobiCompass.modules.extra import xp_command, iseal_command, calc
 from ShinobiCompass.modules.flood import floods, set_constants
-from ShinobiCompass.modules.verify import verify_user, auth
+from ShinobiCompass.modules.verify import verify_user, auth, unauth
 
 # Logging setup
 logging.basicConfig(
@@ -86,6 +86,7 @@ application.add_handler(CommandHandler("set", set_constants))
 
 application.add_handler(CommandHandler("verify", verify_user))
 application.add_handler(CommandHandler("auth", auth))
+application.add_handler(CommandHandler("unauth", unauth))
 
 application.add_handler(CommandHandler("cal", calc))
 
