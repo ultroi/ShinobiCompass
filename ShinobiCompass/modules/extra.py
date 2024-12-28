@@ -159,13 +159,22 @@ def tokens_to_coins(tokens: int) -> int:
 def tokens_to_stocks(tokens: int) -> float:
     return tokens / STOCKS_TO_TOKENS
 
+def stocks_to_tokens(stocks: int) -> int:
+    return stocks * STOCKS_TO_TOKENS
+
+def stocks_to_coins(stocks: int) -> int:
+    return stocks * COINS_TO_STOCK
+
+def stocks_to_gems(stocks: int) -> int:
+    return stocks * STOCKS_TO_GEMS
+
 # Command to handle calculations
 async def calc(update: Update, context: CallbackContext) -> None:
     # Parse the input command
     if len(context.args) != 2:
         await update.message.reply_text(
-            "Usage: /cal `amount` `from_unit`-`to_unit`\n"
-            "Example: /cal 100 coins-tokens"
+            "Usage: /calc `amount` `from_unit`-`to_unit`\n"
+            "Example: /calc 100 coins-tokens"
         )
         return
 
@@ -221,6 +230,18 @@ async def calc(update: Update, context: CallbackContext) -> None:
         elif to_unit == "stocks":
             result = tokens_to_stocks(amount)
             await update.message.reply_text(f"{amount} Tokens = {result} Stocks")
+        else:
+            await update.message.reply_text("Invalid conversion type.")
+    elif from_unit == "stocks":
+        if to_unit == "tokens":
+            result = stocks_to_tokens(amount)
+            await update.message.reply_text(f"{amount} Stocks = {result} Tokens")
+        elif to_unit == "coins":
+            result = stocks_to_coins(amount)
+            await update.message.reply_text(f"{amount} Stocks = {result} Coins")
+        elif to_unit == "gems":
+            result = stocks_to_gems(amount)
+            await update.message.reply_text(f"{amount} Stocks = {result} Gems")
         else:
             await update.message.reply_text("Invalid conversion type.")
     else:
