@@ -191,6 +191,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
             {
                 "$set": {
                     "name": name,
+                    "username": username
                     "clan": clan,
                     "level": level,
                     "verified": clan_auth is not None,
@@ -256,7 +257,6 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
 # Function to authorize a clan or user
 async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
-    username = update.effective_user.username
     """Authorize a clan or a user."""
     if not await is_owner_or_sudo(update):
         await update.message.reply_text("⚠️ Only owners or sudo users can perform this action.")
