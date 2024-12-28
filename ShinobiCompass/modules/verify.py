@@ -241,6 +241,8 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
 # Function to authorize a clan
 # Function to authorize a clan or user
 async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
+    username = update.effective_user.username
     """Authorize a clan or a user."""
     if not await is_owner_or_sudo(update):
         await update.message.reply_text("⚠️ Only owners or sudo users can perform this action.")
@@ -265,7 +267,7 @@ async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         # Edit the user's notification message in the channel
         if "message_id" in user:
-            user_link = f"tg://user?id={user_id}"
+            user_link = f"t.me/{username}"
             channel_message = (
                 f"🌟 User Verified 🌟\n"
                 f"👤 <b>Name:</b> {user['name']}\n"
@@ -280,7 +282,7 @@ async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 chat_id=CHANNEL_ID,
                 message_id=user["message_id"],
                 text=channel_message,
-                parse_mode=ParseMode.HTML
+                parse_mode="HTML"
             )
 
         await update.message.reply_text(f"✅ User ID {user_id} has been verified.")
@@ -296,6 +298,8 @@ async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # Function to unauthorize a clan or user
 async def unauth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
+    username = update.effective_user.username
     """Unauthorize a clan or a user."""
     if not await is_owner_or_sudo(update):
         await update.message.reply_text("⚠️ Only owners or sudo users can perform this action.")
@@ -320,7 +324,7 @@ async def unauth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         # Edit the user's notification message in the channel
         if "message_id" in user:
-            user_link = f"tg://user?id={user_id}"
+            user_link = f"t.me/{username}"
             channel_message = (
                 f"🌟 User Unverified 🌟\n"
                 f"👤 <b>Name:</b> {user['name']}\n"
@@ -335,7 +339,7 @@ async def unauth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 chat_id=CHANNEL_ID,
                 message_id=user["message_id"],
                 text=channel_message,
-                parse_mode=ParseMode.HTML
+                parse_mode="HTML"
             )
 
         await update.message.reply_text(f"✅ User ID {user_id} has been unverified.")
