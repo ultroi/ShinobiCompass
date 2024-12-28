@@ -42,24 +42,30 @@ async def is_verified(update: Update, context: CallbackContext):
 
     # Check if the user exists and if verified
     user_data = users_collection.find_one({"user_id": user_id})
-    if user_data and user_data.get("verified", False):
-        # If the user is verified, check if their clan is authorized
-        clan = user_data.get("clan")
-        if clan is None:
-            logger.info(f"User ID: {user_id} is verified, but has no clan specified.")
-            return False  # If no clan is specified, return False
+    if not user_data:
+        logger.info(f"User ID: {user_id} not found in the database.")
+        return False
 
-        # If clan is specified, check if it's authorized
-        clan_auth = db.clans.find_one({"name": clan, "authorized": True})
-        if clan_auth:
-            logger.info(f"User ID: {user_id} is verified and part of an authorized clan.")
-            return True
-        else:
-            # Provide specific feedback that the clan is not authorized
-            logger.info(f"User ID: {user_id} is verified but their clan '{clan}' is not authorized.")
-            return "You are not authorized!!"
-    logger.info(f"User ID: {user_id} is not verified.")
-    return False
+    # If the user is verified manually, bypass further checks
+    if user_data.get("verified", False):
+        logger.info(f"User ID: {user_id} is manually verified.")
+        return True
+
+    # If not manually verified, check if their clan is authorized
+    clan = user_data.get("clan")
+    if not clan:
+        logger.info(f"User ID: {user_id} is not verified and has no clan specified.")
+        return False  # If no clan is specified, return False
+
+    # If clan is specified, check if it's authorized
+    clan_auth = db.clans.find_one({"name": clan, "authorized": True})
+    if clan_auth:
+        logger.info(f"User ID: {user_id} is part of an authorized clan.")
+        return True
+    else:
+        # Provide specific feedback that the clan is not authorized
+        logger.info(f"User ID: {user_id} is not verified. Their clan '{clan}' is not authorized.")
+        return "You are not authorized!!"
 
 # This decorator checks if the user is verified. If not, it asks the user to verify.
 def require_verification(func):
@@ -78,7 +84,7 @@ def require_verification(func):
         # If the user is verified but the clan is not authorized, inform the user
         elif isinstance(is_verified_user, str) and is_verified_user == "You are not authorized!!":
             await update.message.reply_text(
-                "⚠️ You are not authorized!!"
+                "⚠️ You are not authorized!! Please join an authorized clan to gain access."
             )
             return
 
@@ -86,6 +92,7 @@ def require_verification(func):
         return await func(update, context, *args, **kwargs)
 
     return wrapper
+
 
 
 
@@ -101,6 +108,13 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
     timezone = pytz.timezone('Asia/Kolkata')
     
     try:
+
+        # Check if the user is already verified
+        user = db.users.find_one({"user_id": user_id})
+        if user and user.get("verified", False):
+            await update.message.reply_text("✅ You are already verified. No need to verify again.")
+            return
+        
         # Ensure the message is private
         if update.message.chat.type != 'private':
             await update.message.reply_text(
