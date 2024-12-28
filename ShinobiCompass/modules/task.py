@@ -501,47 +501,6 @@ async def clear_tasks(update: Update, context: CallbackContext) -> None:
 
 
 @require_verification
-async def end_task(update: Update, context: CallbackContext) -> None:
-    # Check if the user is an admin
-    if not await is_admin(update, context):
-        await update.message.reply_text("Only admins can end tasks.")
-        return
-
-    chat_id = update.effective_chat.id
-
-    # Fetch the active task for the chat
-    task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$gt": datetime.now(IST)}})
-    
-    if not task:
-        await update.message.reply_text("No active task to end.")
-        return
-
-    # Task is found, so we proceed with editing the message first
-    message_id = task.get("message_id")
-
-    # You can call `edit_task_message` to modify the task's message before ending it
-    await edit_task_message(
-        context, chat_id, message_id, task["task_id"], 
-        task["start_time"].strftime('%I:%M%p'), task["end_time"].strftime('%I:%M%p'),
-        task["description"], task["reward_value"], task["reward_type"], 0  # Delay 0 means edit immediately
-    )
-
-    # Now mark the task as ended by setting the end_time to now
-    tasks_collection.update_one(
-        {"_id": task["_id"]},
-        {"$set": {"end_time": datetime.now(IST)}}  # Set the task's end time to the current time
-    )
-
-    # Call delete_task_data with the complete task dictionary for cleanup
-    await delete_task_data(context, task, chat_id)
-
-    # Optionally send a message to inform the admin that the task has ended
-    await update.message.reply_text(f"Task {task['task_id']} has been successfully ended.")
-
-
-
-
-@require_verification
 async def cancel_task(update: Update, context: CallbackContext) -> None:
     if not await is_admin(update, context):
         await update.message.reply_text("Only admins can cancel tasks.")
