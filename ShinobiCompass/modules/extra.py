@@ -160,8 +160,15 @@ def tokens_to_coins(tokens: int) -> int:
 def tokens_to_stocks(tokens: int) -> float:
     return tokens / STOCKS_TO_TOKENS
 
-def stocks_to_tokens(stocks: int) -> int:
-    return stocks * STOCKS_TO_TOKENS
+def stocks_to_tokens(stocks: int) -> tuple[int, int]:
+    """
+    Convert stocks to tokens and calculate total tax.
+    Returns the resulting tokens and total tax deducted.
+    """
+    tokens_per_stock = STOCKS_TO_TOKENS - TOKEN_TAX_PER_STOCK
+    total_tokens = stocks * tokens_per_stock
+    total_tax = stocks * TOKEN_TAX_PER_STOCK
+    return total_tokens, total_tax
 
 def stocks_to_coins(stocks: int) -> int:
     return stocks * COINS_TO_STOCK
@@ -236,8 +243,11 @@ async def calc(update: Update, context: CallbackContext) -> None:
             await update.message.reply_text("Invalid conversion type.")
     elif from_unit == "stocks":
         if to_unit == "tokens":
-            result = stocks_to_tokens(amount)
-            await update.message.reply_text(f"{amount} Stocks = {result} Tokens")
+            result, total_tax = stocks_to_tokens(amount)
+            await update.message.reply_text(
+                f"{amount} Stocks = {result} Tokens\n"
+                f"Total tax deducted: {total_tax} Tokens"
+            )
         elif to_unit == "coins":
             result = stocks_to_coins(amount)
             await update.message.reply_text(f"{amount} Stocks = {result} Coins")
