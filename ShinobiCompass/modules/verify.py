@@ -93,22 +93,22 @@ def require_verification(func):
 DEFAULT_CLANS = ["Uzumaki", "Namikaze", "Uchiha", "Otsutsuki"]
 
 # Function to verify the user
+# Function to verify the user
 async def verify_user(update: Update, context: CallbackContext) -> None:
     """Verify user based on inventory message."""
-    # Initialize user ID early
     user_id = update.effective_user.id
     username = update.effective_user.username
     timezone = pytz.timezone('Asia/Kolkata')
     
     try:
-        # Check if the message is private
+        # Ensure the message is private
         if update.message.chat.type != 'private':
             await update.message.reply_text(
                 "⚠️ Verification only in a private message (PM) to me. I cannot verify users in group chats."
             )
             return
 
-        # Check if the database is connected
+        # Ensure database connection
         if db is None:
             await update.message.reply_text("⚠️ Database connection is not initialized.")
             return
@@ -120,35 +120,31 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
 
         inventory_message = update.message.reply_to_message.text
 
-        # Check the forwarded message source
+        # Ensure the forwarded message is from the correct user ID
         if update.message.reply_to_message.forward_from and update.message.reply_to_message.forward_from.id != 5416991774:
             await update.message.reply_text("⚠️ The forwarded inventory message must come from user ID 5416991774.")
             return
 
-        # Convert the original message time to aware datetime with IST timezone
+        # Check if the message is recent (within 1 minute)
         original_message_time = update.message.reply_to_message.date.replace(tzinfo=timezone)
         current_time = datetime.now(timezone)
-
-        # Check if the inventory message was sent within the last minute (in seconds)
         time_diff_seconds = (current_time - original_message_time).total_seconds()
-    
-        # If the difference is more than 60 seconds, reject the verification
-        if time_diff_seconds < 60:
+
+        if time_diff_seconds > 60:
             await update.message.reply_text("⚠️ The inventory message must be recent (within 1 minute).")
             return
 
-        # Extract user ID from the inventory message
+        # Extract fields from the inventory message
         id_match = re.search(r"┣ 🆔 ID[:：]?\s*(\d+)", inventory_message)
         if not id_match or int(id_match.group(1)) != user_id:
             await update.message.reply_text("⚠️ The inventory message user ID does not match your Telegram ID.")
             return
 
-        # Extract user details
         name_match = re.search(r"┣ 👤 Name[:：]?\s*(.+)", inventory_message)
         level_match = re.search(r"┣ 🎚️ Level[:：]?\s*(\d+)", inventory_message)
         clan_match = re.search(r"🏯 Clan[:：]?\s*(.+)", inventory_message)
 
-        # Check if all necessary fields are extracted
+        # Ensure all fields are extracted
         if not name_match or not level_match or not clan_match:
             missing_fields = []
             if not name_match:
@@ -162,20 +158,18 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
             )
             return
 
-        # Extract values from regex matches
+        # Extract values
         name = name_match.group(1).strip()
         level = int(level_match.group(1))
         clan = clan_match.group(1).strip()
-
-        # Handle the case when clan is None (No clan specified)
         if not clan or clan.lower() == "none":
             clan = None
 
         # Check if the clan is authorized
         clan_auth = db.clans.find_one({"name": clan, "authorized": True}) if clan else None
 
-        # Update the user's data in the database (ensure this is async if using Motor)
-        db.users.update_one(
+        # Update the user's data in the database
+        result = db.users.find_one_and_update(
             {"user_id": user_id},
             {
                 "$set": {
@@ -187,9 +181,45 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
                 }
             },
             upsert=True,
+            return_document=True
         )
 
-        # Notify the user about their verification status
+        # Prepare the channel message content
+        user_link = f"t.me/{username}"
+        channel_message = (
+            f"🌟 User Update 🌟\n"
+            f"👤 <b>Name:</b> {name}\n"
+            f"🆔 <b>ID:</b> <code>{user_id}</code>\n"
+            f"🏯 <b>Clan:</b> {clan or 'None'}\n"
+            f"🎚️ <b>Level:</b> {level}\n"
+            f"<b>🔗 Link:</b> <a href=\"{user_link}\">User Profile</a>\n"
+            f"📅 <b>Joined At:</b> {current_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
+            f"✅ <b>Verified:</b> {'Yes' if clan_auth is not None else 'No'}"
+        )
+
+        # Edit or send the channel message
+        if result and "message_id" in result:
+            # Edit the existing message
+            await context.bot.edit_message_text(
+                chat_id=CHANNEL_ID,
+                message_id=result["message_id"],
+                text=channel_message,
+                parse_mode="HTML"
+            )
+        else:
+            # Send a new message to the channel
+            sent_message = await context.bot.send_message(
+                chat_id=CHANNEL_ID,
+                text=channel_message,
+                parse_mode="HTML"
+            )
+            # Save the message ID in the database
+            db.users.update_one(
+                {"user_id": user_id},
+                {"$set": {"message_id": sent_message.message_id}}
+            )
+
+        # Notify the user
         if clan_auth is not None:
             await update.message.reply_text(
                 f"✅ {name} (ID: {user_id}) has been verified as part of the {clan} clan!"
@@ -199,84 +229,123 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
                 f"⚠️ {name} (ID: {user_id}) is not authorized to use this bot. Clan '{clan}' is not authorized."
             )
 
-        # Send the player's data to the channel
-        user = {
-            'name': name,
-            'id': user_id,
-            'clan': clan,
-            'level': level,
-            'verified': clan_auth is not None
-        }
-
-        user_link = f"t.me/{username}"
-
-        channel_message = (
-            f"🌟 New User 🌟\n"
-            f"👤 <b>Name:</b> {user['name']}\n"
-            f"🆔 <b>ID:</b> <code>{user['id']}</code>\n"
-            f"🏯 <b>Clan:</b> {user['clan'] or 'None'}\n"
-            f"🎚️ <b>Level:</b> {user['level']}\n"
-            f"<b>🔗 Link:</b> <a href=\"{user_link}\">User Profile</a>\n"
-            f"📅 <b>Joined At:</b> {current_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
-            f"✅ <b>Verified:</b> {'Yes' if user['verified'] else 'No'}"
-        )
-
-        # Send the message to the channel
-        await context.bot.send_message(
-            chat_id=CHANNEL_ID,  # Replace with your actual channel ID
-            text=channel_message,
-            parse_mode="HTML"
-        )
-
     except Exception as e:
         logger.error(f"Verification error for user ID {user_id}: {str(e)}")
         await update.message.reply_text(f"⚠️ An error occurred while verifying the user: {str(e)}")
 
 
 
-
 # Function to authorize a clan
+# Function to authorize a clan or user
 async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Authorize a clan."""
+    """Authorize a clan or a user."""
     if not await is_owner_or_sudo(update):
         await update.message.reply_text("⚠️ Only owners or sudo users can perform this action.")
         return
 
     if not context.args:
-        await update.message.reply_text("⚠️ Please provide a clan name to authorize.")
+        await update.message.reply_text("⚠️ Please provide a clan name or user ID to authorize.")
         return
 
     input_value = context.args[0].strip()
 
-    # Check if the clan is in the default list
-    if input_value in DEFAULT_CLANS:
-        await update.message.reply_text(f"✅ Clan '{input_value}' is already authorized by default.")
-        return
+    # Check if the input is numeric (user ID)
+    if input_value.isdigit():
+        user_id = int(input_value)
+        user = db.users.find_one({"user_id": user_id})
 
-    db.clans.update_one({"name": input_value}, {"$set": {"authorized": True}}, upsert=True)
-    await update.message.reply_text(f"✅ Clan '{input_value}' has been authorized.")
+        if not user:
+            await update.message.reply_text(f"⚠️ User ID {user_id} not found in the database.")
+            return
+
+        db.users.update_one({"user_id": user_id}, {"$set": {"verified": True}})
+
+        # Edit the user's notification message in the channel
+        if "message_id" in user:
+            user_link = f"tg://user?id={user_id}"
+            channel_message = (
+                f"🌟 User Verified 🌟\n"
+                f"👤 <b>Name:</b> {user['name']}\n"
+                f"🆔 <b>ID:</b> <code>{user['user_id']}</code>\n"
+                f"🏯 <b>Clan:</b> {user['clan']}\n"
+                f"🎚️ <b>Level:</b> {user['level']}\n"
+                f"<b>🔗 Link:</b> <a href=\"{user_link}\">User Profile</a>\n"
+                f"✅ <b>Verified:</b> Yes"
+            )
+
+            await context.bot.edit_message_text(
+                chat_id=CHANNEL_ID,
+                message_id=user["message_id"],
+                text=channel_message,
+                parse_mode=ParseMode.HTML
+            )
+
+        await update.message.reply_text(f"✅ User ID {user_id} has been verified.")
+    else:
+        # Handle clan authorization
+        if input_value in DEFAULT_CLANS:
+            await update.message.reply_text(f"✅ Clan '{input_value}' is already authorized by default.")
+            return
+
+        db.clans.update_one({"name": input_value}, {"$set": {"authorized": True}}, upsert=True)
+        await update.message.reply_text(f"✅ Clan '{input_value}' has been authorized.")
 
 
-# Function to unauthorize a clan
+# Function to unauthorize a clan or user
 async def unauth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Unauthorize a clan."""
+    """Unauthorize a clan or a user."""
     if not await is_owner_or_sudo(update):
         await update.message.reply_text("⚠️ Only owners or sudo users can perform this action.")
         return
 
     if not context.args:
-        await update.message.reply_text("⚠️ Please provide a clan name to unauthorize.")
+        await update.message.reply_text("⚠️ Please provide a clan name or user ID to unauthorize.")
         return
 
     input_value = context.args[0].strip()
 
-    # Check if the clan is in the default list
-    if input_value in DEFAULT_CLANS:
-        await update.message.reply_text(f"⚠️ Clan '{input_value}' cannot be unauthenticated because it's a default authorized clan.")
-        return
+    # Check if the input is numeric (user ID)
+    if input_value.isdigit():
+        user_id = int(input_value)
+        user = db.users.find_one({"user_id": user_id})
 
-    db.clans.update_one({"name": input_value}, {"$set": {"authorized": False}})
-    await update.message.reply_text(f"✅ Clan '{input_value}' has been unauthorized.")
+        if not user:
+            await update.message.reply_text(f"⚠️ User ID {user_id} not found in the database.")
+            return
+
+        db.users.update_one({"user_id": user_id}, {"$set": {"verified": False}})
+
+        # Edit the user's notification message in the channel
+        if "message_id" in user:
+            user_link = f"tg://user?id={user_id}"
+            channel_message = (
+                f"🌟 User Unverified 🌟\n"
+                f"👤 <b>Name:</b> {user['name']}\n"
+                f"🆔 <b>ID:</b> <code>{user['user_id']}</code>\n"
+                f"🏯 <b>Clan:</b> {user['clan']}\n"
+                f"🎚️ <b>Level:</b> {user['level']}\n"
+                f"<b>🔗 Link:</b> <a href=\"{user_link}\">User Profile</a>\n"
+                f"✅ <b>Verified:</b> No"
+            )
+
+            await context.bot.edit_message_text(
+                chat_id=CHANNEL_ID,
+                message_id=user["message_id"],
+                text=channel_message,
+                parse_mode=ParseMode.HTML
+            )
+
+        await update.message.reply_text(f"✅ User ID {user_id} has been unverified.")
+    else:
+        # Handle clan unauthorization
+        if input_value in DEFAULT_CLANS:
+            await update.message.reply_text(
+                f"⚠️ Clan '{input_value}' cannot be unauthenticated because it's a default authorized clan."
+            )
+            return
+
+        db.clans.update_one({"name": input_value}, {"$set": {"authorized": False}})
+        await update.message.reply_text(f"✅ Clan '{input_value}' has been unauthorized.")
 
 
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
