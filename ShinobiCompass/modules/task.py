@@ -591,3 +591,53 @@ async def cancel_task(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text("The task has been canceled successfully, and users have been notified.")
 
 
+
+async def check_current_tasks(update: Update, context: CallbackContext) -> None:
+    user_id = update.effective_user.id
+
+    # Check if the user is a sudo or owner
+    if not await is_owner_or_sudo(user_id):
+        await update.message.reply_text("None")
+        return
+
+    # Fetch all active tasks from the database
+    now_ist = datetime.now(IST)
+    tasks = list(tasks_collection.find({"end_time": {"$gt": now_ist}}))
+
+    # If no active tasks exist
+    if not tasks:
+        await update.message.reply_text("No active tasks available.")
+        return
+
+    # Prepare an interactive response message
+    response = "<b>🔸 Active Tasks 🔸</b>\n\n"
+    for task in tasks:
+        task_id = task.get("task_id", "Unknown")
+        task_message = task.get("description", "No Description")
+        start_time = task.get("start_time_str", "Unknown")
+        end_time = task.get("end_time_str", "Unknown")
+        group_id = task.get("chat_id", "Unknown")
+        group_name = (await context.bot.get_chat(group_id)).title if group_id != "Unknown" else "Unknown"
+
+        response += (
+            f"┏━━━━━━━━━━━━━━━━\n"
+            f"┣ <b>Group Name:</b> {group_name}\n" 
+            f"┣ <b>Group ID:</b> <code>{group_id}</code>\n"
+            f"┣ <b>Task ID:</b> {task_id}\n"
+            f"┣ <b>Task Message:</b> {task_message}\n"
+            f"┣ <b>Start Time:</b> {start_time}\n"
+            f"┣ <b>End Time:</b> {end_time}\n"
+            f"━━━━━━━━━━━━━━━━\n\n"
+        )
+
+    # Send the interactive task list
+    await update.message.reply_text(
+        response,
+        parse_mode=telegram.constants.ParseMode.HTML,
+        disable_web_page_preview=True
+    )
+
+
+
+
+
