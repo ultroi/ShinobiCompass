@@ -316,7 +316,6 @@ async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # Function to unauthorize a clan or user
 async def unauth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
-    username = update.effective_user.username
     """Unauthorize a clan or a user."""
     if not await is_owner_or_sudo(update):
         await update.message.reply_text("⚠️ Only owners or sudo users can perform this action.")
@@ -339,9 +338,12 @@ async def unauth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         db.users.update_one({"user_id": user_id}, {"$set": {"verified": False}})
 
+        # Preserve the original username from the database for the link
+        original_username = user.get("username", "NoUsername")
+
         # Edit the user's notification message in the channel
         if "message_id" in user:
-            user_link = f"t.me/{username}"
+            user_link = f"t.me/{original_username}"  # Use the original username from the DB
             channel_message = (
                 f"🌟 User Unverified 🌟\n"
                 f"👤 <b>Name:</b> {user['name']}\n"
@@ -384,18 +386,22 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     try:
         user_id = int(context.args[0])  # Convert argument to integer for user ID
-        user = db.users.find_one({"id": user_id})  # Ensure this is async
+        user = db.users.find_one({"user_id": user_id})  # Ensure the correct field name `user_id`
         if not user:
             await update.message.reply_text(f"⚠️ No user found with ID {user_id}.")
             return
 
-        # Build the user info message with HTML formatting
+        # Get username, default to 'NoUsername' if not set
+        username = user.get("username", "NoUsername")
+        user_link = f"t.me/{username}"  # Use the original username to create the user link
+
         user_info = (
             f"👤 <b>Name:</b> {user['name']}\n"
-            f"🆔 <b>ID:</b> <code>{user['id']}</code>\n"
+            f"🆔 <b>ID:</b> <code>{user['user_id']}</code>\n"
             f"🏯 <b>Clan:</b> {user['clan']}\n"
             f"🎚️ <b>Level:</b> {user['level']}\n"
-            f"✅ <b>Verified:</b> {'Yes' if user['verified'] else 'No'}"
+            f"✅ <b>Verified:</b> {'Yes' if user['verified'] else 'No'}\n"
+            f"🔗 <b>Link:</b> <a href=\"{user_link}\">User Profile</a>"
         )
 
         # Send the formatted user info back to the chat
