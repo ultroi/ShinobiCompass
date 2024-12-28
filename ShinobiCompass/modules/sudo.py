@@ -21,7 +21,7 @@ async def is_owner_or_sudo(update: Update) -> bool:
         return True
 
     # Check if the user is a sudo user by querying MongoDB
-    sudo_user = await db[SUDO_USERS_COLLECTION].find_one({"user_id": user_id})
+    sudo_user = db[SUDO_USERS_COLLECTION].find_one({"user_id": user_id})
     if sudo_user:
         return True
     
