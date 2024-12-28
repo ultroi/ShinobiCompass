@@ -213,17 +213,12 @@ async def edit_task_message(context: CallbackContext, chat_id: int, message_id: 
 
 
 async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
-    # Get the current time and task end time
+    # Wait until the task end time
     now_ist = datetime.now(IST)
     task_end_time = task['end_time']
-    if task_end_time.tzinfo is None:  # If task_end_time is naive, make it aware
-        task_end_time = IST.localize(task_end_time)
+    delay = (task_end_time - now_ist).total_seconds()
 
-    # Wait until the task end time is reached (sleeping until the task ends)
-    if now_ist < task_end_time:
-        await asyncio.sleep((task_end_time - now_ist).total_seconds())
-        now_ist = datetime.now(IST)  # Get current time again after the wait
-
+    
     # Call the taskresult function to generate and show the leaderboard
     result_message = await taskresult(chat_id, context)
 
