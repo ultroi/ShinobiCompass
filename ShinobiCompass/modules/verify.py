@@ -252,7 +252,6 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
 
 
 
-# Function to authorize a clan
 # Function to authorize a clan or user
 async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
@@ -281,7 +280,9 @@ async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         # Edit the user's notification message in the channel
         if "message_id" in user:
-            user_link = f"t.me/{username}"
+            # Use the existing user link as is (no change to the existing link)
+            user_link = user.get('user_link', f"t.me/{user['user_id']}")  # Assuming 'user_link' holds the existing link
+
             channel_message = (
                 f"🌟 User Verified 🌟\n"
                 f"👤 <b>Name:</b> {user['name']}\n"
@@ -308,6 +309,7 @@ async def auth(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         db.clans.update_one({"name": input_value}, {"$set": {"authorized": True}}, upsert=True)
         await update.message.reply_text(f"✅ Clan '{input_value}' has been authorized.")
+
 
 
 # Function to unauthorize a clan or user
