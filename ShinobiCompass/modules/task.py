@@ -178,15 +178,18 @@ async def set_task(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text("An error occurred while creating the task. Please check the format and try again.")
 
 
-async def edit_task_message(context: CallbackContext, chat_id: int, message_id: int, task_id: int, start_time_str: str, end_time_str: str, description: str, reward_value: int, reward_type: str, delay: float, pin=False):
-    # Calculate task duration and wait until the task ends
-    now_ist = datetime.now(IST)
-    task_end_time = IST.localize(datetime.combine(now_ist.date(), datetime.strptime(end_time_str, '%I:%M%p').time()))
-    task_duration = (task_end_time - now_ist).total_seconds()
-
-    # Wait until the task end time is reached (sleeping until the task ends)
-    await asyncio.sleep(task_duration)
-
+async def edit_task_message(
+    context: CallbackContext,
+    chat_id: int,
+    message_id: int,
+    task_id: int,
+    start_time_str: str,
+    end_time_str: str,
+    description: str,
+    reward_value: int,
+    reward_type: str,
+    pin=False
+):
     # Prepare the message text
     task_message_text = (
         f"<b><u>🔴 Task Has Ended 🔴</u></b>\n\n"
@@ -206,48 +209,63 @@ async def edit_task_message(context: CallbackContext, chat_id: int, message_id: 
         parse_mode=telegram.constants.ParseMode.HTML
     )
 
-    # Pin the message if the 'pin' argument is True
+    # Pin the task message if required
     if pin:
-        await context.bot.pin_chat_message(chat_id, message_id=message_id)
-
+        try:
+            await context.bot.pin_chat_message(chat_id, message_id=message_id)
+        except telegram.error.BadRequest as e:
+            print(f"Error while pinning the message: {e}")
 
 
 async def delete_task_data(context: CallbackContext, task: dict, chat_id: int):
-    # Wait until the task end time
     now_ist = datetime.now(IST)
     task_end_time = task['end_time']
     delay = (task_end_time - now_ist).total_seconds()
 
-    
-    # Call the taskresult function to generate and show the leaderboard
-    result_message = await taskresult(chat_id, context)
+    # Wait for the task duration
+    if delay > 0:
+        await asyncio.sleep(delay)
 
-    # Edit the task message and pin it if there was no participation
-    if result_message == "No users participated in the event.":
-        await edit_task_message(context, task, chat_id, pin=True)
-    else:
-        # If there was participation, edit the task message but don't pin it
-        await edit_task_message(context, task, chat_id, pin=False)
+    # Try to generate and pin the leaderboard
+    leaderboard_message_id = None
+    try:
+        leaderboard_message_id = await taskresult(chat_id, context)
+    except Exception as e:
+        print(f"Error generating leaderboard: {e}")
 
-        # Pin the leaderboard message after it is shown
-        # (Assuming taskresult handles generating and sending the leaderboard message)
-        await context.bot.pin_chat_message(chat_id, message_id=result_message.message_id)
-
-    # Unpin the task message (if it exists)
+    # Unpin the previous task message if it exists
     if 'message_id' in task:
         try:
             await context.bot.unpin_chat_message(chat_id, task['message_id'])
         except telegram.error.BadRequest as e:
-            print(f"Error while unpinning: {e}")
+            print(f"Error while unpinning task message: {e}")
 
-    # Update the task status to "completed"
-    tasks_collection.update_one(
-        {"_id": task['_id']},
-        {"$set": {"status": "completed", "end_time": datetime.now(IST)}}
-    )
+    # Update the task message to indicate it has ended
+    if 'message_id' in task:
+        pin_task_message = leaderboard_message_id is None  # Pin task message if no leaderboard exists
+        await edit_task_message(
+            context,
+            chat_id=chat_id,
+            message_id=task['message_id'],
+            task_id=task['task_id'],
+            start_time_str=task['start_time_str'],
+            end_time_str=task['end_time_str'],
+            description=task['description'],
+            reward_value=task['reward_value'],
+            reward_type=task['reward_type'],
+            pin=pin_task_message
+        )
 
     # Delete the task from the database
     tasks_collection.delete_one({"_id": task['_id']})
+
+    # Pin the leaderboard message if it exists
+    if leaderboard_message_id:
+        try:
+            await context.bot.pin_chat_message(chat_id, leaderboard_message_id)
+        except telegram.error.BadRequest as e:
+            print(f"Error while pinning leaderboard: {e}")
+
     
 
 @require_verification
