@@ -24,6 +24,8 @@ async def is_admin(update: Update, context: CallbackContext) -> bool:
 
 async def generate_task_id(chat_id: int) -> str:
     return str(uuid.uuid4().int)[:5]
+
+
 @require_verification
 async def set_task(update: Update, context: CallbackContext) -> None:
     if not await is_admin(update, context):
