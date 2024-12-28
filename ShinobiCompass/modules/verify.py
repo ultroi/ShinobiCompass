@@ -194,7 +194,7 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
                     "clan": clan,
                     "level": level,
                     "verified": clan_auth is not None,
-                    "joined_at": current_time.strftime('%Y-%m-%d %H:%M:%S')
+                    "joined_at": current_time.strftime('%Y-%m-%d %H:%M:%S'),
                     "username": username
                 }
             },
