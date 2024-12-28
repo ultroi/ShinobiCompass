@@ -17,7 +17,6 @@ from ShinobiCompass.modules.sudo import addsudo, removesudo, sudolist
 from ShinobiCompass.modules.stats import stats, handle_stats_buttons
 from ShinobiCompass.modules.task import (
     set_task,
-    end_task,
     clear_tasks,
     submit_inventory,
     taskresult,
@@ -75,7 +74,6 @@ application.add_handler(CallbackQueryHandler(help_extra, pattern="help_extra"))
 
 # Task handlers
 application.add_handler(CommandHandler("task", set_task))
-application.add_handler(CommandHandler("endtask", end_task))
 application.add_handler(CommandHandler("clearall", clear_tasks))
 application.add_handler(CommandHandler("canceltask", cancel_task))
 application.add_handler(CommandHandler("activetasks", check_current_tasks))
