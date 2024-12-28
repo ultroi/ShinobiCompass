@@ -42,13 +42,14 @@ async def set_task(update: Update, context: CallbackContext) -> None:
             )
             return
 
-        # Check if the bot has admin rights
-        if not bot_member.can_pin_messages or not bot_member.can_edit_messages:
-            await update.message.reply_text(
-                "The bot needs admin rights with the ability to pin and edit messages to manage tasks. "
-                "Please grant the required permissions and try again."
-            )
-            return
+        # # Check required permissions
+        # if not bot_member.can_pin_messages:
+        #     await update.message.reply_text("The bot needs permission to pin messages.")
+        #     return
+
+        # if not bot_member.can_edit_messages:
+        #     await update.message.reply_text("The bot needs permission to edit messages.")
+        #     return
 
         args = context.args
         if len(args) < 2:
