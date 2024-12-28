@@ -418,13 +418,16 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
             # Send a message in the user's PM with the results
             await context.bot.send_message(
                 user_id,
-                f"<b>👋 Hello {user_id},</b>\n\n"
-                f"<u>📊 Here is your inventory report:</u>\n\n"
-                f"<b>💎 First Inventory:</b> {starting_inventory}\n"
-                f"<b>💎 Last Inventory:</b> {ending_inventory}\n"
-                f"<b>🔼 Total Grind:</b> {delta}\n\n"
-                f"<i>🙏 Thanks for participating! Wait for Task Result to check your reward.</i>",
+                text=(
+                    f"<u>📊 Here is your inventory report:</u>\n\n"
+                    f"<b>💎 Starting Inv:</b> {starting_inventory}\n"
+                    f"<b>💎 Ending Inv:</b> {ending_inventory}\n"
+                    f"<b>🔼 Total Grind:</b> {delta}\n\n"
+                    f"<i>🙏 Thank you for participating! Please wait for the Task Result to check your reward.</i>"
+                ),
+                parse_mode=telegram.constants.ParseMode.HTML,
             )
+
 
 
             await update.message.reply_text("Ending inventory submitted successfully.")
@@ -436,12 +439,11 @@ async def submit_inventory(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text("Invalid inventory type. Use 'finv' for starting or 'linv' for ending inventory.")
 
 
-
-async def taskresult(chat_id: int, context: CallbackContext) -> None:
+async def taskresult(chat_id: int, context: CallbackContext) -> int | None:
     task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$lt": datetime.now(IST)}})
     if not task:
         await context.bot.send_message(chat_id, "No completed task to show leaderboard for.")
-        return
+        return None
 
     leaderboard = []
     for key, value in task.items():
@@ -454,24 +456,18 @@ async def taskresult(chat_id: int, context: CallbackContext) -> None:
 
     if not leaderboard:
         await context.bot.send_message(chat_id, "No users participated in the event.")
-        return
+        return None
 
     leaderboard.sort(key=lambda x: x[1], reverse=True)
 
-    # Extract reward from the task message
-    reward_text = f"{task['reward_value']} {task['reward_type']}"
-    if not reward_text:
+    # Extract reward from the task
+    reward_value = task.get('reward_value')
+    reward_type = task.get('reward_type')
+    if not reward_value or not reward_type:
         await context.bot.send_message(chat_id, "Task reward information is missing.")
-        return
-    
-    # Extract the numerical value from the reward (e.g., '100 coins')
-    reward_match = re.match(r"(\d+)\s*(gems|tokens|coins\/glory)", reward_text, re.IGNORECASE)
-    if not reward_match:
-        await context.bot.send_message(chat_id, "Invalid reward format.")
-        return
-    
-    reward_value, reward_type = reward_match.groups()
-    leaderboard_text = f"🏆 <b>Task Result (<b>Reward : </b>{reward_type})</b> 🏆\n\n"
+        return None
+
+    leaderboard_text = f"🏆 <b>Task Result (Reward: {reward_value} {reward_type})</b> 🏆\n\n"
     for user_id, glory_diff in leaderboard:
         user = await context.bot.get_chat_member(chat_id, user_id)
         reward_amount = int(reward_value) * glory_diff
@@ -486,6 +482,10 @@ async def taskresult(chat_id: int, context: CallbackContext) -> None:
     # Send and pin the leaderboard message
     message = await context.bot.send_message(chat_id, leaderboard_text, parse_mode=telegram.constants.ParseMode.HTML)
     await context.bot.pin_chat_message(chat_id, message.message_id)
+
+    return message.message_id
+
+
 
 # to clear and unpin all task 
 async def clear_tasks(update: Update, context: CallbackContext) -> None:
@@ -570,11 +570,10 @@ async def cancel_task(update: Update, context: CallbackContext) -> None:
     except telegram.error.BadRequest as e:
         print(f"Error while unpinning: {e}")
 
-    # Notify users who have started their inventory submission (finv submitted)
-    for user_id in task:
-        # Check if the user has submitted the starting inventory (finv)
-        if f"finv_{user_id}" in task:
-            # Check if the user has also submitted ending inventory (linv)
+    # Notify users who have submitted their inventories
+    for key in task.keys():
+        if key.startswith("finv_"):
+            user_id = int(key.split("_")[1])
             linv_submitted = f"linv_{user_id}" in task
 
             # Craft the message based on their submission status
