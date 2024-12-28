@@ -191,11 +191,11 @@ async def verify_user(update: Update, context: CallbackContext) -> None:
             {
                 "$set": {
                     "name": name,
-                    "username": username
                     "clan": clan,
                     "level": level,
                     "verified": clan_auth is not None,
                     "joined_at": current_time.strftime('%Y-%m-%d %H:%M:%S')
+                    "username": username
                 }
             },
             upsert=True,
