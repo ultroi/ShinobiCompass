@@ -4,20 +4,7 @@ import random
 from bson import ObjectId
 from ShinobiCompass.database import db  # Correct import for MongoDB
 
-# Format item details for display
-def format_item_details(item):
-    if item['category'] == 'beast':
-        return (f"Beast: {item['name']}\nLevel: {item['level']}\nStats: {item['stats']}\n"
-                f"Price: {item['price']}")
-    elif item['category'] == 'level_up_card':
-        return (f"Level-Up Card: {item['name']}\nQuantity: {item['quantity']}\n"
-                f"Price: {item['price']}")
-    elif item['category'] == 'awaken_card':
-        return (f"Awaken Card: {item['name']}\nQuantity: {item['quantity']}\n"
-                f"Price: {item['price']}")
-    elif item['category'] == 'mask':
-        return (f"Mask: {item['name']}\nQuantity: {item['quantity']}\n"
-                f"Price: {item['price']}")
+
 
 # Handle /sell command
 async def sell_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -28,7 +15,7 @@ async def sell_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("Sell Mask", callback_data="sell_mask")]
     ]
     reply_markup = InlineKeyboardMarkup(buttons)
-    await update.message.reply_text("Choose an item to sell:", reply_markup=reply_markup)
+    await update.message.reply_text("Choose an item category to sell:", reply_markup=reply_markup)
 
 # Handle category selection
 async def handle_category_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -38,28 +25,29 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
     context.user_data["selling_category"] = category
 
     await query.edit_message_text(
-        text=f"Send the details for your {category.replace('_', ' ').title()} as a reply to this message."
+        text=f"Please provide the details for your {category.replace('_', ' ').title()}."
     )
 
 # Handle item submissions
 async def handle_item_submission(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.reply_to_message:
-        await update.message.reply_text("Please reply to the bot's message to submit your item details.")
+        await update.message.reply_text("Please reply to the bot's message with the item details.")
         return
 
     category = context.user_data.get("selling_category")
     if not category:
-        await update.message.reply_text("No category selected. Use /sell to start the selling process.")
+        await update.message.reply_text("No category selected. Use /sell to begin selling an item.")
         return
 
     user_id = update.message.from_user.id
     message_text = update.message.text
 
-    # Parse item details (You can implement parsing logic here)
+    # Here, you can implement specific parsing logic for each item type.
+    # For example, for 'beast', you could extract level, stats, etc.
     details = {
-        "name": "ItemName",
-        "quantity": 10,
-        "price": "50 tokens"
+        "name": message_text.split("\n")[0],  # Sample placeholder for parsing logic
+        "quantity": 10,  # Example placeholder, modify as needed
+        "price": "50 tokens"  # Modify as needed based on parsing
     }
 
     db.items_for_sale.insert_one({
@@ -71,7 +59,8 @@ async def handle_item_submission(update: Update, context: ContextTypes.DEFAULT_T
     })
 
     await update.message.reply_text(
-        f"Your {category.replace('_', ' ').title()} '{details['name']}' has been saved. Use /myitems to manage your items."
+        f"Your {category.replace('_', ' ').title()} '{details['name']}' has been saved. "
+        f"Use /myitems to manage your listed items."
     )
 
 # Handle /myitems command
@@ -80,7 +69,7 @@ async def myitems_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     items = list(db.items_for_sale.find({"seller_id": user_id}))
 
     if not items:
-        await update.message.reply_text("You don't have any items listed.")
+        await update.message.reply_text("You have no items listed for sale.")
         return
 
     for item in items:
@@ -90,7 +79,7 @@ async def myitems_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("Remove", callback_data=f"remove_{item['_id']}")]
         ]
         await update.message.reply_text(
-            f"Item: {format_item_details(item)}\nStatus: {item['status'].title()}\nViews: {item.get('views', 0)}",
+            f"Item Details:\n\n{format_item_details(item)}\nStatus: {item['status'].title()}\nViews: {item.get('views', 0)}",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
@@ -103,18 +92,18 @@ async def handle_item_action(update: Update, context: ContextTypes.DEFAULT_TYPE)
     item = db.items_for_sale.find_one({"_id": ObjectId(item_id)})
 
     if not item:
-        await query.edit_message_text("Item not found.")
+        await query.edit_message_text("This item could not be found.")
         return
 
     if action == "edit":
-        await query.edit_message_text("Reply with the updated details for this item.")
+        await query.edit_message_text("Please reply with the updated details for this item.")
         context.user_data["edit_item_id"] = item_id
     elif action == "onsale":
         db.items_for_sale.update_one({"_id": ObjectId(item_id)}, {"$set": {"status": "on_sale"}})
-        await query.edit_message_text("Item has been put on sale!")
+        await query.edit_message_text("This item is now available for purchase!")
     elif action == "remove":
         db.items_for_sale.delete_one({"_id": ObjectId(item_id)})
-        await query.edit_message_text("Item has been removed.")
+        await query.edit_message_text("This item has been removed from your listings.")
 
 # Handle /scroll command
 async def scroll_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -130,7 +119,7 @@ async def scroll_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     items = list(db.items_for_sale.find(query))
     if not items:
-        await update.message.reply_text("No new items available to view.")
+        await update.message.reply_text("No new items are available for viewing right now.")
         return
 
     item = random.choice(items)
@@ -145,5 +134,4 @@ async def scroll_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"Item Found:\n\n{format_item_details(item)}",
         reply_markup=InlineKeyboardMarkup(keyboard)
-    )
-
+        )
