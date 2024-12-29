@@ -1,6 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 import random
+from ShinobiCompass.database import db  # Correct import for the database
 
 # Function to format item details
 def format_item_details(item):
@@ -60,13 +61,9 @@ async def handle_item_submission(update: Update, context: CallbackContext):
         return
 
     if category == "beast":
-        # Parse beast details
-        # Expected format: Beast ID: 53793 USER: RYUK Name: Shukaku Level: 6
         details = parse_beast_details(message_text)
         if details:
-            # Save to the database (MongoDB example)
-            db = await get_db()
-            await db.items_for_sale.insert_one({
+            db.items_for_sale.insert_one({
                 "seller_id": user_id,
                 "category": "beast",
                 "name": details['name'],
@@ -82,9 +79,7 @@ async def handle_item_submission(update: Update, context: CallbackContext):
     elif category == "level_up_card":
         details = parse_level_up_card_details(message_text)
         if details:
-            # Save to database
-            db = await get_db()
-            await db.items_for_sale.insert_one({
+            db.items_for_sale.insert_one({
                 "seller_id": user_id,
                 "category": "level_up_card",
                 "name": details['name'],
@@ -98,9 +93,7 @@ async def handle_item_submission(update: Update, context: CallbackContext):
     elif category == "awaken_card":
         details = parse_awaken_card_details(message_text)
         if details:
-            # Save to database
-            db = await get_db()
-            await db.items_for_sale.insert_one({
+            db.items_for_sale.insert_one({
                 "seller_id": user_id,
                 "category": "awaken_card",
                 "name": details['name'],
@@ -114,9 +107,7 @@ async def handle_item_submission(update: Update, context: CallbackContext):
     elif category == "mask":
         details = parse_mask_details(message_text)
         if details:
-            # Save to database
-            db = await get_db()
-            await db.items_for_sale.insert_one({
+            db.items_for_sale.insert_one({
                 "seller_id": user_id,
                 "category": "mask",
                 "name": details['name'],
@@ -134,8 +125,6 @@ async def scroll_command(update: Update, context: CallbackContext):
     context.user_data.setdefault("seen_items", [])  # Track seen items
     seen_items = context.user_data["seen_items"]
 
-    db = await get_db()
-
     # Exclude user's own items and recently viewed items
     query = {
         "seller_id": {"$ne": user_id},  # Exclude user's own listings
@@ -143,8 +132,7 @@ async def scroll_command(update: Update, context: CallbackContext):
         "status": "on_sale"            # Only show items that are on sale
     }
 
-    # Fetch available items matching the query
-    items = list(await db.items_for_sale.find(query))
+    items = list(db.items_for_sale.find(query))
     if not items:
         await update.message.reply_text("No new items available to view.")
         return
@@ -166,4 +154,4 @@ async def scroll_command(update: Update, context: CallbackContext):
     await update.message.reply_text(
         f"Item Found:\n\n{format_item_details(item)}",
         reply_markup=InlineKeyboardMarkup(keyboard)
-          )
+    )
