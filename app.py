@@ -13,7 +13,7 @@ from telegram.ext import (
 # Import custom 
 from ShinobiCompass.modules.start import start, help_callback_handler, empty_update, back_to_main, help_extra, show_updates_callback, update_message
 from ShinobiCompass.modules.bm import bm, handle_message
-from ShimobiCompass.modules.pawn import sell_command, scroll_command
+from ShinobiCompass.modules.pawn import sell_command, scroll_command
 from ShinobiCompass.modules.sudo import addsudo, removesudo, sudolist
 from ShinobiCompass.modules.stats import stats, handle_stats_buttons
 from ShinobiCompass.modules.task import (
