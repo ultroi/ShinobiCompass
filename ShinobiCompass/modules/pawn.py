@@ -6,6 +6,21 @@ from ShinobiCompass.database import db  # Correct import for MongoDB
 
 
 
+# Format item details for display
+def format_item_details(item):
+    if item['category'] == 'beast':
+        return (f"Beast: {item['name']}\nLevel: {item.get('level', 'N/A')}\n"
+                f"Stats: {item.get('stats', 'N/A')}\nPrice: {item['price']}")
+    elif item['category'] == 'level_up_card':
+        return (f"Level-Up Card: {item['name']}\nQuantity: {item['quantity']}\n"
+                f"Price: {item['price']}")
+    elif item['category'] == 'awaken_card':
+        return (f"Awaken Card: {item['name']}\nQuantity: {item['quantity']}\n"
+                f"Price: {item['price']}")
+    elif item['category'] == 'mask':
+        return (f"Mask: {item['name']}\nQuantity: {item['quantity']}\n"
+                f"Price: {item['price']}")
+
 # Handle /sell command
 async def sell_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     buttons = [
