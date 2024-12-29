@@ -13,7 +13,7 @@ from telegram.ext import (
 # Import custom 
 from ShinobiCompass.modules.start import start, help_callback_handler, empty_update, back_to_main, help_extra, show_updates_callback, update_message
 from ShinobiCompass.modules.bm import bm, handle_message
-from ShinobiCompass.modules.pawn import sell_command, scroll_command, handle_category_selection, handle_item_submission
+from ShinobiCompass.modules.pawn import sell_command, scroll_command, handle_category_selection, handle_item_submission, handle_item_action
 from ShinobiCompass.modules.sudo import addsudo, removesudo, sudolist
 from ShinobiCompass.modules.stats import stats, handle_stats_buttons
 from ShinobiCompass.modules.task import (
@@ -95,9 +95,11 @@ application.add_handler(CommandHandler("info", info))
 application.add_handler(CommandHandler("cal", calc))
 
 application.add_handler(CommandHandler("sell", sell_command))
-application.add_handler(CallbackQueryHandler(handle_category_selection, pattern="^sell_"))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_item_submission))
+application.add_handler(CommandHandler("myitems", myitems_command))
 application.add_handler(CommandHandler("scroll", scroll_command))
+application.add_handler(CallbackQueryHandler(handle_category_selection, pattern="^sell_"))
+application.add_handler(CallbackQueryHandler(handle_item_action, pattern="^(edit|onsale|remove)_"))
+application.add_handler(MessageHandler(filters.TEXT & filters.REPLY, handle_item_submission))
 
 # Inventory submission handlers
 application.add_handler(CommandHandler("finv", submit_inventory))
