@@ -1,5 +1,5 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, Filters
+from telegram.ext import CallbackContext, CallbackQueryHandler
 import random
 from ShinobiCompass.database import db  # Correct import for the database
 
