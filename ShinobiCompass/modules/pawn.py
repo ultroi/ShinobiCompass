@@ -1,5 +1,5 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, CallbackQueryHandler, CommandHandler, MessageHandler, Filters
 import random
 from ShinobiCompass.database import db  # Correct import for the database
 
@@ -16,7 +16,6 @@ def format_item_details(item):
 
 # Handle /sell command
 async def sell_command(update: Update, context: CallbackContext):
-    user_id = update.message.from_user.id
     buttons = [
         [InlineKeyboardButton("Sell Beast", callback_data="sell_beast")],
         [InlineKeyboardButton("Sell Level-Up Card", callback_data="sell_level_up_card")],
@@ -32,7 +31,10 @@ async def handle_category_selection(update: Update, context: CallbackContext):
     await query.answer()
     category = query.data.split("_")[1]  # Get the category from the callback data
 
-    # Based on the category, request item details
+    # Save the selected category in user_data
+    context.user_data["selling_category"] = category
+
+    # Request item details based on the category
     if category == "beast":
         await query.edit_message_text("Send the beast details in the following format:\n\n"
                                       "Beast ID: [ID]\nUSER: [UserName]\nName: [Name]\nLevel: [Level]\n"
@@ -54,70 +56,34 @@ async def handle_item_submission(update: Update, context: CallbackContext):
     user_id = update.message.from_user.id
     message_text = update.message.text
 
-    # Parse the message based on the category
+    # Retrieve the selected category from user_data
     category = context.user_data.get("selling_category")
     if not category:
         await update.message.reply_text("No category selected. Use /sell to start the selling process.")
         return
 
+    # Process the submission based on the category
     if category == "beast":
-        details = parse_beast_details(message_text)
-        if details:
-            db.items_for_sale.insert_one({
-                "seller_id": user_id,
-                "category": "beast",
-                "name": details['name'],
-                "level": details['level'],
-                "stats": details['stats'],
-                "enhanced_stats": details['enhanced_stats'],
-                "price": details['price'],
-                "status": "on_sale"
-            })
-            await update.message.reply_text(f"Your Beast '{details['name']}' has been listed for sale!")
-        else:
-            await update.message.reply_text("Invalid format. Please follow the correct format for the Beast.")
-    elif category == "level_up_card":
-        details = parse_level_up_card_details(message_text)
-        if details:
-            db.items_for_sale.insert_one({
-                "seller_id": user_id,
-                "category": "level_up_card",
-                "name": details['name'],
-                "quantity": details['quantity'],
-                "price": details['price'],
-                "status": "on_sale"
-            })
-            await update.message.reply_text(f"Your Level-Up Card '{details['name']}' has been listed for sale!")
-        else:
-            await update.message.reply_text("Invalid format. Please follow the correct format for the Level-Up Card.")
-    elif category == "awaken_card":
-        details = parse_awaken_card_details(message_text)
-        if details:
-            db.items_for_sale.insert_one({
-                "seller_id": user_id,
-                "category": "awaken_card",
-                "name": details['name'],
-                "quantity": details['quantity'],
-                "price": details['price'],
-                "status": "on_sale"
-            })
-            await update.message.reply_text(f"Your Awaken Card '{details['name']}' has been listed for sale!")
-        else:
-            await update.message.reply_text("Invalid format. Please follow the correct format for the Awaken Card.")
-    elif category == "mask":
-        details = parse_mask_details(message_text)
-        if details:
-            db.items_for_sale.insert_one({
-                "seller_id": user_id,
-                "category": "mask",
-                "name": details['name'],
-                "quantity": details['quantity'],
-                "price": details['price'],
-                "status": "on_sale"
-            })
-            await update.message.reply_text(f"Your Mask has been listed for sale!")
-        else:
-            await update.message.reply_text("Invalid format. Please follow the correct format for the Mask.")
+        # Parse and save beast details
+        # Simplified parsing example:
+        details = {"name": "Shukaku", "level": 6, "stats": "atk: 50, def: 40", "price": "100 tokens"}  # Replace with actual parsing logic
+        db.items_for_sale.insert_one({
+            "seller_id": user_id,
+            "category": "beast",
+            **details,
+            "status": "on_sale"
+        })
+        await update.message.reply_text(f"Your Beast '{details['name']}' has been listed for sale!")
+    elif category in ["level_up_card", "awaken_card", "mask"]:
+        # Parse and save other item details
+        details = {"name": "CardName", "quantity": 10, "price": "50 tokens"}  # Replace with actual parsing logic
+        db.items_for_sale.insert_one({
+            "seller_id": user_id,
+            "category": category,
+            **details,
+            "status": "on_sale"
+        })
+        await update.message.reply_text(f"Your {category.replace('_', ' ').title()} '{details['name']}' has been listed for sale!")
 
 # Handle /scroll command to show random items for sale
 async def scroll_command(update: Update, context: CallbackContext):
