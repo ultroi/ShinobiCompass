@@ -40,32 +40,20 @@ async def is_verified(update: Update, context: CallbackContext):
         logger.error("Unable to access 'users' collection.")
         return False
 
-    # Check if the user exists and if verified
+    # Check if the user exists in the database
     user_data = users_collection.find_one({"user_id": user_id})
     if not user_data:
         logger.info(f"User ID: {user_id} not found in the database.")
         return False
 
-    # If the user is verified manually, bypass further checks
-    if user_data.get("verified", False):
-        logger.info(f"User ID: {user_id} is manually verified.")
-        return True
-
-    # If not manually verified, check if their clan is authorized
-    clan = user_data.get("clan")
-    if not clan:
-        logger.info(f"User ID: {user_id} is not verified and has no clan specified.")
-        return False  # If no clan is specified, return False
-
-    # If clan is specified, check if it's authorized
-    clan_auth = db.clans.find_one({"name": clan, "authorized": True})
-    if clan_auth:
-        logger.info(f"User ID: {user_id} is part of an authorized clan.")
-        return True
-    else:
-        # Provide specific feedback that the clan is not authorized
-        logger.info(f"User ID: {user_id} is not verified. Their clan '{clan}' is not authorized.")
+    # Check if the user is manually verified
+    if not user_data.get("verified", False):
+        logger.info(f"User ID: {user_id} is not verified in the database.")
         return "You are not authorized!!"
+
+    # If manually verified, bypass clan checks
+    logger.info(f"User ID: {user_id} is manually verified.")
+    return True
 
 # This decorator checks if the user is verified. If not, it asks the user to verify.
 def require_verification(func):
@@ -75,25 +63,23 @@ def require_verification(func):
         is_verified_user = await is_verified(update, context)
 
         # If the user is not verified, inform them they are not authorized to use the command
-        if is_verified_user == False:
-            await update.message.reply_text(
-                "⚠️ You are not authorized to use this command. Please verify your clan by replying to your inventory with /verify."
-            )
-            return
-
-        # If the user is verified but the clan is not authorized, inform the user
-        elif isinstance(is_verified_user, str) and is_verified_user == "You are not authorized!!":
+        if isinstance(is_verified_user, str) and is_verified_user == "You are not authorized!!":
             await update.message.reply_text(
                 "⚠️ You are not authorized!! Please join an authorized clan to gain access."
             )
             return
 
-        # If the user is verified and the clan is authorized, proceed to the original function
+        # If the user is not in the database or verification failed, prompt to verify
+        if not is_verified_user:
+            await update.message.reply_text(
+                "⚠️ You are not authorized to use this command. Please verify your clan by replying to your inventory with /verify."
+            )
+            return
+
+        # If the user is verified, proceed to the original function
         return await func(update, context, *args, **kwargs)
 
     return wrapper
-
-
 
 
 # Default list of clans (initially unauthorized)
