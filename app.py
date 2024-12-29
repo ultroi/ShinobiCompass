@@ -96,7 +96,7 @@ application.add_handler(CommandHandler("cal", calc))
 
 applicatiom.add_handler(CommandHandler("sell", sell_command))
 application.add_handler(CallbackQueryHandler(handle_category_selection, pattern="^sell_"))
-application.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_item_submission))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_item_submission))
 application.add_handler(CommandHandler("scroll", scroll_command))
 
 # Inventory submission handlers
