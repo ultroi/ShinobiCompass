@@ -1,5 +1,5 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import CallbackQueryHandler, ContextTypes
 import random
 from bson import ObjectId
 from ShinobiCompass.database import db  # Correct import for MongoDB
