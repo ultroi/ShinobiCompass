@@ -118,8 +118,8 @@ application.add_handler(CallbackQueryHandler(handle_accept_offer, pattern=r"acce
 application.add_handler(CallbackQueryHandler(handle_trade_request, pattern=r"trade_[a-f0-9]{24}"))
 application.add_handler(CallbackQueryHandler(handle_price_negotiation, pattern=r"negotiate_[a-f0-9]{24}"))
 
-Message Handlers
-# application.add_handler(MessageHandler(filters.FORWARDED & filters.TEXT, handle_forwarded_beast))  # Forwarded beast messages
+# Message Handlers
+application.add_handler(MessageHandler(filters.FORWARDED & filters.TEXT, handle_forwarded_beast))  # Forwarded beast messages
 application.add_handler(MessageHandler(filters.Regex(r"^\d+ \w+$"), handle_beast_price))  # Price input for beasts
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_item_submission))  # Item details for cards/masks
 
