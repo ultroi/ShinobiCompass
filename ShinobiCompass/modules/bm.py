@@ -130,6 +130,18 @@ def analyze_message(message):
                             f"   💸 <b>Offer Price:</b> {price:.2f} stocks\n"
                             f"   📈 <b>Expected Price:</b> {expected_price_stocks:.2f} stocks ({expected_price_tokens} tokens)\n\n"
                         )
+
+                # Check for "Token" section (Token items)
+                elif section == "Rare" and "token" in item.lower():
+                    expected_price_tokens = calculate_expected_price_in_tokens(price)
+                    if price < expected_price_stocks:
+                        profit_deals.append(
+                            f"<b>Token:</b> {item}\n"
+                            f"   💸 <b>Offer Price:</b> {price:.2f} tokens\n"
+                            f"   📈 <b>Expected Price:</b> {expected_price_tokens:.2f} tokens\n\n"
+
+                        )
+                        
                 else:
                     # Non-Legendary Levelup Cards
                     expected_price_tokens = quantity * RARE_LEVELUP_CARD_TOKENS
@@ -141,16 +153,9 @@ def analyze_message(message):
                             f"   📈 <b>Expected Price:</b> {expected_price_stocks:.2f} stocks ({expected_price_tokens} tokens)\n\n"
                         )
 
-            # Check for "Token" section (Token items)
-            elif section == "Rare" and "token" in item.lower():
-                expected_price_tokens = calculate_expected_price_in_tokens(price)
-                if price < expected_price_stocks:
-                    profit_deals.append(
-                        f"<b>Token:</b> {item}\n"
-                        f"   💸 <b>Offer Price:</b> {price:.2f} tokens\n"
-                        f"   📈 <b>Expected Price:</b> {expected_price_tokens:.2f} tokens\n\n"
 
-                    )
+
+
 
             # Check for Common section (Coins and Gems)
             elif section == "Common":
