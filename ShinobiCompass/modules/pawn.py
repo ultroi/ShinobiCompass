@@ -121,6 +121,11 @@ async def myitems_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Validate level-up cards, awaken cards, and masks
 async def handle_item_submission(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        await update.message.reply_text("This command requires a text message. Please provide the necessary details.")
+        return
+
+    
     category = context.user_data.get("selling_category")
     message_text = update.message.text.strip()
     user_id = update.message.from_user.id
