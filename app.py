@@ -13,7 +13,6 @@ from telegram.ext import (
 # Import custom 
 from ShinobiCompass.modules.start import start, help_callback_handler, empty_update, back_to_main, help_extra, show_updates_callback, update_message
 from ShinobiCompass.modules.bm import bm, handle_message
-#from ShinobiCompass.modules.pawn import sell_command, scroll_command, handle_category_selection, handle_item_submission, handle_item_action, myitems_command
 from ShinobiCompass.modules.sudo import addsudo, removesudo, sudolist
 from ShinobiCompass.modules.stats import stats, handle_stats_buttons
 from ShinobiCompass.modules.task import (
@@ -24,6 +23,20 @@ from ShinobiCompass.modules.task import (
     cancel_task,
     check_current_tasks,
 )
+from ShinobiCompass.handlers import (  # Import the appropriate handlers
+    handle_forwarded_beast,
+    handle_beast_price,
+    sell_command,
+    handle_category_selection,
+    myitems_command,
+    handle_item_submission,
+    status_command,
+    handle_item_action,
+    handle_accept_offer,
+    handle_trade_request,
+    handle_price_negotiation
+)
+
 from ShinobiCompass.modules.extra import xp_command, iseal_command, calc
 from ShinobiCompass.modules.flood import floods, set_constants
 from ShinobiCompass.modules.verify import verify_user, auth, unauth, info
@@ -94,12 +107,18 @@ application.add_handler(CommandHandler("info", info))
 
 application.add_handler(CommandHandler("cal", calc))
 
-#application.add_handler(CommandHandler("sell", sell_command))
-#application.add_handler(CommandHandler("myitems", myitems_command))
-#application.add_handler(CommandHandler("scroll", scroll_command))
-#application.add_handler(CallbackQueryHandler(handle_category_selection, pattern="^sell_"))
-#application.add_handler(CallbackQueryHandler(handle_item_action, pattern="^(edit|onsale|remove)_"))
-#application.add_handler(MessageHandler(filters.TEXT & filters.REPLY, handle_item_submission))
+application.add_handler(CallbackQueryHandler(handle_category_selection, pattern=r"myitems_"))
+application.add_handler(CallbackQueryHandler(handle_category_selection, pattern=r"sell_"))
+application.add_handler(CallbackQueryHandler(handle_item_action, pattern=r"(edit|onsale|remove)_[a-f0-9]{24}"))
+application.add_handler(CallbackQueryHandler(handle_accept_offer, pattern=r"accept_offer_[a-f0-9]{24}"))
+application.add_handler(CallbackQueryHandler(handle_trade_request, pattern=r"trade_[a-f0-9]{24}"))
+application.add_handler(CallbackQueryHandler(handle_price_negotiation, pattern=r"negotiate_[a-f0-9]{24}"))
+
+# Message Handlers
+application.add_handler(MessageHandler(filters.FORWARDED & filters.TEXT, handle_forwarded_beast))  # Forwarded beast messages
+application.add_handler(MessageHandler(filters.Regex(r"^\d+ \w+$"), handle_beast_price))  # Price input for beasts
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_item_submission))  # Item details for cards/masks
+
 
 # Inventory submission handlers
 application.add_handler(CommandHandler("finv", submit_inventory))
