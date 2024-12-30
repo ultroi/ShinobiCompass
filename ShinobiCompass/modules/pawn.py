@@ -385,5 +385,63 @@ async def handle_price_negotiation(update: Update, context: ContextTypes.DEFAULT
 
 
  
+# In-memory database for demonstration
+item_store = {
+    "beast": {},
+    "cards": {},
+    "masks": {}
+}
 
+# /set <price> for beasts
+def set_beast_price(update, context):
+    if not update.message.reply_to_message:
+        update.message.reply_text("Reply to a forwarded message of the beast to set its price.")
+        return
+    
+    try:
+        price = int(context.args[0])
+        beast_id = update.message.reply_to_message.message_id  # Use message ID as unique key
+        item_store["beast"][beast_id] = price
+        update.message.reply_text(f"Beast price set to {price}.")
+    except (IndexError, ValueError):
+        update.message.reply_text("Usage: /set <price> (reply to a beast's forwarded message).")
+
+# /set <quantity> <name of card> <price>
+def set_card_details(update, context):
+    try:
+        quantity = int(context.args[0])
+        card_name = context.args[1]
+        price = int(context.args[2])
+        item_store["cards"][card_name] = {"quantity": quantity, "price": price}
+        update.message.reply_text(f"Card '{card_name}' set with quantity {quantity} and price {price}.")
+    except (IndexError, ValueError):
+        update.message.reply_text("Usage: /set <quantity> <name of card> <price>.")
+
+# /set <quantity of masks> <price>
+def set_mask_details(update, context):
+    try:
+        quantity = int(context.args[0])
+        price = int(context.args[1])
+        item_store["masks"] = {"quantity": quantity, "price": price}
+        update.message.reply_text(f"Masks set with quantity {quantity} and price {price}.")
+    except (IndexError, ValueError):
+        update.message.reply_text("Usage: /set <quantity of masks> <price>.")
+
+# Validate sale before processing
+def validate_sale(update, context):
+    try:
+        item_type = context.args[0]
+        if item_type == "beast" and not item_store["beast"]:
+            update.message.reply_text("You must set a price for the beast before selling.")
+            return False
+        elif item_type == "cards" and not item_store["cards"]:
+            update.message.reply_text("You must set details for the cards before selling.")
+            return False
+        elif item_type == "masks" and not item_store["masks"]:
+            update.message.reply_text("You must set quantity and price for masks before selling.")
+            return False
+        return True
+    except IndexError:
+        update.message.reply_text("Please specify the item type (beast, cards, masks).")
+        return False
 
