@@ -1,4 +1,4 @@
-import loggg
+import logging
 import os
 from pymongo import MongoClient
 from telegram import Update
@@ -23,19 +23,19 @@ from ShinobiCompass.modules.task import (
     cancel_task,
     check_current_tasks,
 )
-from ShinobiCompass.modules.pawn import (  # Import the appropriate handlers
-    handle_forwarded_beast,
-    handle_beast_price,
-    sell_command,
-    handle_category_selection,
-    myitems_command,
-    handle_item_submission,
-    status_command,
-    handle_item_action,
-    handle_accept_offer,
-    handle_trade_request,
-    handle_price_negotiation
-)
+# from ShinobiCompass.modules.pawn import (  # Import the appropriate handlers
+#     handle_forwarded_beast,
+#     handle_beast_price,
+#     sell_command,
+#     handle_category_selection,
+#     myitems_command,
+#     handle_item_submission,
+#     status_command,
+#     handle_item_action,
+#     handle_accept_offer,
+#     handle_trade_request,
+#     handle_price_negotiation
+# )
 
 from ShinobiCompass.modules.extra import xp_command, iseal_command, calc
 from ShinobiCompass.modules.flood import floods, set_constants
@@ -107,21 +107,21 @@ application.add_handler(CommandHandler("info", info))
 
 application.add_handler(CommandHandler("cal", calc))
 
-application.add_handler(CommandHandler("sell", sell_command))
-application.add_handler(CommandHandler("myitems", myitems_command))
-application.add_handler(CommandHandler("status", status_command))
+# application.add_handler(CommandHandler("sell", sell_command))
+# application.add_handler(CommandHandler("myitems", myitems_command))
+# application.add_handler(CommandHandler("status", status_command))
 
-application.add_handler(CallbackQueryHandler(handle_category_selection, pattern=r"myitems_"))
-application.add_handler(CallbackQueryHandler(handle_category_selection, pattern=r"sell_"))
-application.add_handler(CallbackQueryHandler(handle_item_action, pattern=r"(edit|onsale|remove)_[a-f0-9]{24}"))
-application.add_handler(CallbackQueryHandler(handle_accept_offer, pattern=r"accept_offer_[a-f0-9]{24}"))
-application.add_handler(CallbackQueryHandler(handle_trade_request, pattern=r"trade_[a-f0-9]{24}"))
-application.add_handler(CallbackQueryHandler(handle_price_negotiation, pattern=r"negotiate_[a-f0-9]{24}"))
+# application.add_handler(CallbackQueryHandler(handle_category_selection, pattern=r"myitems_"))
+# application.add_handler(CallbackQueryHandler(handle_category_selection, pattern=r"sell_"))
+# application.add_handler(CallbackQueryHandler(handle_item_action, pattern=r"(edit|onsale|remove)_[a-f0-9]{24}"))
+# application.add_handler(CallbackQueryHandler(handle_accept_offer, pattern=r"accept_offer_[a-f0-9]{24}"))
+# application.add_handler(CallbackQueryHandler(handle_trade_request, pattern=r"trade_[a-f0-9]{24}"))
+# application.add_handler(CallbackQueryHandler(handle_price_negotiation, pattern=r"negotiate_[a-f0-9]{24}"))
 
-# Message Handlers
-application.add_handler(MessageHandler(filters.FORWARDED & filters.TEXT, handle_forwarded_beast))  # Forwarded beast messages
-application.add_handler(MessageHandler(filters.Regex(r"^\d+ \w+$"), handle_beast_price))  # Price input for beasts
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_item_submission))  # Item details for cards/masks
+# # Message Handlers
+# application.add_handler(MessageHandler(filters.FORWARDED & filters.TEXT, handle_forwarded_beast))  # Forwarded beast messages
+# application.add_handler(MessageHandler(filters.Regex(r"^\d+ \w+$"), handle_beast_price))  # Price input for beasts
+# application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_item_submission))  # Item details for cards/masks
 
 
 # Inventory submission handlers
