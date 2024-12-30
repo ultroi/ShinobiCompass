@@ -4,9 +4,17 @@ import random
 from bson import ObjectId
 from ShinobiCompass.database import db  # Correct import for MongoDB
 
+# Ensure all interactions happen in private messages
+def is_private_chat(update: Update):
+    return update.message.chat.type == "private"
+
 
 # Handle forwarded messages for beasts
 async def handle_forwarded_beast(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_private_chat(update):
+        return
+
+    
     if not update.message.forward_from or update.message.forward_from.id != 5416991774:
         await update.message.reply_text("Please forward a beast message from the bot @beastbot (ID: 5416991774).")
         return
@@ -76,6 +84,9 @@ async def handle_beast_price(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 # Handle /sell command
 async def sell_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_private_chat(update):
+        return
+        
     buttons = [
         [InlineKeyboardButton("Sell Beast", callback_data="sell_beast")],
         [InlineKeyboardButton("Sell Level-Up Card", callback_data="sell_level_up_card")],
@@ -100,6 +111,10 @@ async def handle_category_selection(update: Update, context: ContextTypes.DEFAUL
 
 # Handle /myitems command
 async def myitems_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_private_chat(update):
+        return
+
+    
     user_id = update.message.from_user.id
     items = list(db.items_for_sale.find({"seller_id": user_id}))
 
