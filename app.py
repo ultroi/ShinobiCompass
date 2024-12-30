@@ -107,6 +107,10 @@ application.add_handler(CommandHandler("info", info))
 
 application.add_handler(CommandHandler("cal", calc))
 
+app.add_handler(CommandHandler("sell", sell_command))
+app.add_handler(CommandHandler("myitems", myitems_command))
+app.add_handler(CommandHandler("status", status_command))
+
 application.add_handler(CallbackQueryHandler(handle_category_selection, pattern=r"myitems_"))
 application.add_handler(CallbackQueryHandler(handle_category_selection, pattern=r"sell_"))
 application.add_handler(CallbackQueryHandler(handle_item_action, pattern=r"(edit|onsale|remove)_[a-f0-9]{24}"))
