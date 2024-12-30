@@ -56,6 +56,10 @@ async def handle_forwarded_beast(update: Update, context: ContextTypes.DEFAULT_T
 
 # Handle price input for beasts
 async def handle_beast_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_private(update):
+        return
+
+    
     if "beast_details" not in context.user_data:
         await update.message.reply_text("No beast details found. Please start by forwarding the beast message.")
         return
