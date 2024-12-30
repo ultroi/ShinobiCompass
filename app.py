@@ -23,7 +23,7 @@ from ShinobiCompass.modules.task import (
     cancel_task,
     check_current_tasks,
 )
-from ShinobiCompass.handlers import (  # Import the appropriate handlers
+from ShinobiCompass.modules.pawn import (  # Import the appropriate handlers
     handle_forwarded_beast,
     handle_beast_price,
     sell_command,
