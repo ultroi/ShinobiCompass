@@ -40,6 +40,7 @@ from ShinobiCompass.modules.task import (
 from ShinobiCompass.modules.extra import xp_command, iseal_command, calc
 from ShinobiCompass.modules.flood import floods, set_constants
 from ShinobiCompass.modules.verify import verify_user, auth, unauth, info
+from ShinobiCompass.modules.call import reply
 
 # Logging setup
 logging.basicConfig(
@@ -123,6 +124,7 @@ application.add_handler(CommandHandler("cal", calc))
 # application.add_handler(MessageHandler(filters.Regex(r"^\d+ \w+$"), handle_beast_price))  # Price input for beasts
 # application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_item_submission))  # Item details for cards/masks
 
+application.add_handler(CommandHanlder("call", reply))
 
 # Inventory submission handlers
 application.add_handler(CommandHandler("finv", submit_inventory))
