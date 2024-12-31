@@ -124,7 +124,7 @@ application.add_handler(CommandHandler("cal", calc))
 # application.add_handler(MessageHandler(filters.Regex(r"^\d+ \w+$"), handle_beast_price))  # Price input for beasts
 # application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_item_submission))  # Item details for cards/masks
 
-application.add_handler(CommandHanlder("call", reply))
+application.add_handler(CommandHandler("call", reply))
 
 # Inventory submission handlers
 application.add_handler(CommandHandler("finv", submit_inventory))
