@@ -12,7 +12,7 @@ async def reply(update: Update, context: CallbackContext) -> None:
 
     # Ensure the command has the correct number of arguments
     if len(context.args) < 2:
-        await update.message.reply_text('Usage: /reply <user_id> <message>')
+        await update.message.reply_text('Usage: /call <user_id> <message>')
         return
 
     # Extract user_id and the reply message
