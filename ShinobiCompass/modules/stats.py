@@ -18,8 +18,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Create inline keyboard with buttons
     keyboard = [
-        [InlineKeyboardButton("Users", callback_data="users")],
-        [InlineKeyboardButton("Groups", callback_data="groups")]
+        [InlineKeyboardButton("Users", callback_data="users")]
     ]
     # Add an exit button if the command is triggered in a group chat
     if update.message.chat.type != 'private':
@@ -53,26 +52,6 @@ async def handle_stats_buttons(update: Update, context: ContextTypes.DEFAULT_TYP
 
         # Send the list of users
         await query.edit_message_text(user_list, parse_mode="HTML")
-
-    elif query.data == "groups":
-        # Fetch all groups from the database
-        groups_cursor = db.groups.find()
-
-        # Prepare group list
-        group_list = "<b>List of Groups:</b>\n"
-        for group in groups_cursor:  # Use regular `for` loop
-            group_id = group['group_id']
-            group_name = group.get('group_name', 'Unknown Group')  # Default to 'Unknown Group' if name is missing
-            try:
-                # Fetch group details using their group_id
-                group_info = await context.bot.get_chat(group_id)  # Fetch group details from Telegram
-                group_list += f"<b>{group_name}</b> - <a href='tg://chat?id={group_id}'>@{group_name}</a> ({group_id})\n"
-            except Exception as e:
-                # Handle error if group details cannot be fetched
-                group_list += f"<b>Group ID:</b> {group_id} (Could not fetch details - {str(e)})\n"
-
-        # Send the list of groups
-        await query.edit_message_text(group_list, parse_mode="HTML")
 
     elif query.data == "exit":
         # Handle exit button: Edit message with exit text
