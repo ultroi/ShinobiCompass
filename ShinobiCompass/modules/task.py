@@ -35,150 +35,138 @@ async def set_task(update: Update, context: CallbackContext) -> None:
     try:
         args = context.args
         if len(args) < 2:
-            await update.message.reply_text(
-                "Invalid format.\nUsage: /task starttime-endtime description (reward)\n"
-                "Example: /task 9:40pm-10:00pm Do 100 glory (19 coins/glory)"
-            )
-            return
+            raise ValueError("Insufficient arguments")
 
-        # Combine all arguments for easier parsing
+        # Combine all arguments into a single string for easier parsing
         command_input = ' '.join(args)
 
-        # Use regex to parse start-end time, description, and reward
-        match = re.match(
-            r"(\d{1,2}:\d{2}(?:am|pm)-\d{1,2}:\d{2}(?:am|pm))\s+(.+?)\s+\((.+)\)",
-            command_input,
-            re.IGNORECASE
-        )
+        # Use regex to extract starttime-endtime, description, and reward
+        match = re.match(r"(\d{1,2}:\d{2}(?:am|pm)-\d{1,2}:\d{2}(?:am|pm))\s+(.+)\s+\((.+)\)", command_input, re.IGNORECASE)
         if not match:
-            await update.message.reply_text(
-                "Invalid format.\nUsage: /task starttime-endtime description (reward)\n"
-                "Example: /task 9:40pm-10:00pm Do 100 glory (19 coins/glory)"
-            )
-            return
+            raise ValueError("Invalid format. Use: /task starttime-endtime description (reward)")
 
         time_range, description, reward = match.groups()
 
+        if '-' not in time_range:
+            raise ValueError("Invalid time range format. Use starttime-endtime format.")
         start_time_str, end_time_str = time_range.split('-')
 
         now_ist = datetime.now(IST)
         current_date = now_ist.date()
 
-        # Parse start and end times
-        start_time = IST.localize(
-            datetime.combine(current_date, datetime.strptime(start_time_str, '%I:%M%p').time())
-        )
-        end_time = IST.localize(
-            datetime.combine(current_date, datetime.strptime(end_time_str, '%I:%M%p').time())
-        )
+        # Parse and localize start and end times
+        start_time = IST.localize(datetime.combine(
+            current_date,
+            datetime.strptime(start_time_str, '%I:%M%p').time()
+        ))
+        end_time = IST.localize(datetime.combine(
+            current_date,
+            datetime.strptime(end_time_str, '%I:%M%p').time()
+        ))
 
-        # Ensure valid time ranges
+        # Ensure times are on the current day
         if start_time.date() != now_ist.date() or end_time.date() != now_ist.date():
-            await update.message.reply_text("Start and end times must be on the current day.")
+            await update.message.reply_text(f"Start time and end time must be on the current day. Current time: {now_ist.strftime('%I:%M %p')}")
             return
 
+        # Ensure times are in the future
         if start_time <= now_ist or end_time <= now_ist:
-            await update.message.reply_text(
-                "Start and end times must be in the future.\n"
-                "The bot only supports tasks for the current day (12:00am - 11:59pm)."
-            )
+            await update.message.reply_text("Start time and end time must be in the future.")
             return
 
+        # Ensure end time is later than start time
         if end_time <= start_time:
-            await update.message.reply_text("End time must be later than the start time.")
+            await update.message.reply_text("End time must be later than start time.")
             return
 
         chat_id = update.effective_chat.id
 
-        # Check for an existing active task
-        existing_task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$gt": now_ist}})
+        # Check if there is already an active task in the database for this chat
+        existing_task = task_collection().find_one({"chat_id": chat_id, "end_time": {"$gt": now_ist}})
         if existing_task:
-            await update.message.reply_text(
-                "A task is already active for today. Wait until the current task ends before creating a new one."
-            )
+            await update.message.reply_text("A task is already active for today. Please wait until the current task ends before creating a new one.")
             return
 
-        # Validate reward format
+        # Unpin the previous task if any
+        if existing_task:
+            try:
+                await context.bot.unpin_chat_message(chat_id, existing_task['message_id'])
+            except telegram.error.BadRequest as e:
+                print(f"Error while unpinning: {e}")
+
+        # Ensure the reward is in a valid format (either gems, tokens, or coins/glory)
         reward_match = re.match(r"(\d+)\s*(gems|tokens|coins\/glory)", reward, re.IGNORECASE)
         if not reward_match:
-            await update.message.reply_text(
-                "Invalid reward format. Use '2 gems', '3 tokens', or '100 coins/glory'."
-            )
-            return
+            raise ValueError("Invalid reward format. Use ('2 gems', '3 tokens', '100 coins/glory')")
 
         reward_value, reward_type = reward_match.groups()
 
         # Generate a unique task ID
         task_id = await generate_task_id(chat_id)
 
-        # Save task to database
+        # Save task to the database
         task = {
             "task_id": task_id,
             "chat_id": chat_id,
             "start_time": start_time,
             "end_time": end_time,
-            "description": description.strip(),
+            "description": description,
             "reward_value": int(reward_value),
             "reward_type": reward_type.lower(),
             "created_at": now_ist,
             "verified_users": []
         }
-        tasks_collection.insert_one(task)
+        task_collection().insert_one(task)
 
-        # Prepare message content
-        message_text = (
-            f"<b><u>❄️📝 Today's Task ❄️</u></b>\n"
-            f"<b>Task ID:</b> <code>{task_id}</code>\n\n"
-            f"<b>Task Time:</b> <i>{start_time_str} - {end_time_str}</i>\n\n"
-            f"<b>Description:</b> <i>{description}</i>\n"
-            f"<b>Reward:</b> <i>{reward_value} {reward_type.lower()}</i>\n\n"
-            "☃️ The task will begin shortly. Prepare yourself for the icy challenge ahead! ☃️"
-        )
-
-        # Send the initial task message
-        message = await context.bot.send_message(chat_id=chat_id, text=message_text, parse_mode=telegram.constants.ParseMode.HTML)
-
-        # Update task with message ID
-        tasks_collection.update_one({"task_id": task_id}, {"$set": {"message_id": message.message_id}})
-
-        # Pin the task message
-        await context.bot.pin_chat_message(chat_id, message.message_id)
-
-        # Schedule the task for editing the message when the task starts
-        delay = (start_time - now_ist).total_seconds()  # Calculate the delay until the start time
-        await asyncio.sleep(delay)  # Wait for the task to start
-
-        # After the delay, edit the message
-        updated_message_text = (
-            f"<b><u>📝 Today's Task ❄️</u></b>\n\n"
-            f"<b>Task ID:</b> <i>{task_id}</i>\n"
-            f"<b>Task Time:</b> <i>{start_time_str} - {end_time_str}</i>\n\n"
-            f"<b>Description:</b> <i>{description}</i>\n"
-            f"<b>Reward:</b> <i>{reward_value} {reward_type.lower()}</i>\n\n"
-            f"<b>How to Participate:</b>\n"
-            f"1️⃣ <b>/finv</b> task_id — Submit your starting inventory.\n"
-            f"2️⃣ <b>/linv</b> task_id — Submit your last inventory.\n"
-            f"🌨️🕒 Make sure to submit your participation before the task expires!"
-        )
-
-        # Edit the message with participation details
-        await context.bot.edit_message_text(
+        # Determine the task message based on start time
+        message = await context.bot.send_message(
             chat_id=chat_id,
-            message_id=message.message_id,
-            text=updated_message_text,
+            text=(f"<b><u>📝 Today's Task</u></b>\n"
+              f"<b>Task ID:</b> <code>{task_id}</code>\n\n"
+              f"<b>Task Time:</b> <i>{start_time_str} - {end_time_str}</i>\n\n"
+              f"<b>Description:</b> <i>{description}</i>\n"
+              f"<b>Reward:</b> <i>{reward_value} {reward_type.lower()}</i>\n\n"
+              f"⏳ The task will begin shortly. Get ready!"),
             parse_mode=telegram.constants.ParseMode.HTML
         )
 
-        # Schedule the task to delete data after it ends
+        # Update the task with the message ID and pin it
+        task_collection().update_one({"task_id": task_id}, {"$set": {"message_id": message.message_id}})
+        await context.bot.pin_chat_message(chat_id, message.message_id)
+
+        # Schedule task to edit the message after the start time
+        delay = (start_time - now_ist).total_seconds()
+        asyncio.create_task(task_message(context, chat_id, message.message_id, task_id, start_time_str, end_time_str, description, reward_value, reward_type.lower(), delay))
+
+        # Schedule task to delete task data and unpin message after 12 hours
         asyncio.create_task(delete_task_data(context, task, chat_id))
 
-    except ValueError as e:
-        await update.message.reply_text(str(e))
+    except (IndexError, ValueError) as e:
+        print(f"Error: {e}")
+        await update.message.reply_text(
+            "Usage: /task starttime-endtime description (reward)\n"
+            "Example: /task 9:40pm-10:00pm Do 100 glory (19 coins/glory)"
+        )
 
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-        await update.message.reply_text("An error occurred while creating the task. Please check the format and try again.")
 
+async def task_message(context: CallbackContext, chat_id: int, message_id: int, task_id: int, start_time_str: str, end_time_str: str, description: str, reward_value: int, reward_type: str, delay: float):
+    await asyncio.sleep(delay)
+    await context.bot.edit_message_text(
+        chat_id=chat_id,
+        message_id=message_id,
+        text=(
+            f"<b><u>📝 Today's Task</u></b>\n"
+            f"<b>Task ID:</b><code>{task_id}</code>\n\n"
+            f"<b>Task Time:</b> <i>{start_time_str} - {end_time_str}</i>\n\n"
+            f"<b>Description:</b> <i>{description}</i>\n"
+            f"<b>Reward:</b> <i>{reward_value} {reward_type}</i>\n\n"
+            f"<b>How to Participate:</b>\n"
+            f"1️⃣ <b>/finv</b> — Submit your starting inventory.\n"
+            f"2️⃣ <b>/linv</b> — Submit your last inventory.\n\n"
+            f"🕒 Be sure to submit your participation before the task ends!"
+        ),
+        parse_mode=telegram.constants.ParseMode.HTML
+    )
 
 async def edit_task_message(
     context: CallbackContext,
@@ -196,11 +184,6 @@ async def edit_task_message(
     task_message_text = (
         f"<b><u>🔴 Task Has Ended 🔴</u></b>\n\n"
         "Thank you for your participation 🙏\n\n"
-        f"<b>Task ID:</b> {task_id}\n"
-        f"<b>Description:</b> {description}\n"
-        f"<b>Reward:</b> {reward_value} {reward_type}\n"
-        f"<b>Start Time:</b> {start_time_str}\n"
-        f"<b>End Time:</b> {end_time_str}\n"
     )
 
     # Edit the task message
