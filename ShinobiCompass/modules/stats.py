@@ -12,7 +12,6 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Get total counts for users and groups
     user_count = db.users.count_documents({})
-    group_count = db.groups.count_documents({})
 
     # Prepare the message with total users and groups
     message_text = f"<b>Total Users: {user_count}</b>\n<b>Total Groups: {group_count}</b>"
@@ -35,14 +34,13 @@ async def handle_stats_buttons(update: Update, context: ContextTypes.DEFAULT_TYP
     query = update.callback_query
     await query.answer()  # Acknowledge the button press
 
-    # Handle the button click based on the callback_data
     if query.data == "users":
         # Fetch all users from the database
         users_cursor = db.users.find()
-        
+
         # Prepare user list
         user_list = "<b>List of Users:</b>\n"
-        async for user in users_cursor:
+        for user in users_cursor:  # Use regular `for` loop
             user_id = user['user_id']
             try:
                 # Fetch user details using their user_id
@@ -62,7 +60,7 @@ async def handle_stats_buttons(update: Update, context: ContextTypes.DEFAULT_TYP
 
         # Prepare group list
         group_list = "<b>List of Groups:</b>\n"
-        async for group in groups_cursor:
+        for group in groups_cursor:  # Use regular `for` loop
             group_id = group['group_id']
             group_name = group.get('group_name', 'Unknown Group')  # Default to 'Unknown Group' if name is missing
             try:
