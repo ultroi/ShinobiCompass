@@ -28,6 +28,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(message_text, parse_mode="HTML", reply_markup=reply_markup)
 
+
 # Function to handle users and groups button presses
 async def handle_stats_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -38,19 +39,21 @@ async def handle_stats_buttons(update: Update, context: ContextTypes.DEFAULT_TYP
         users_cursor = db.users.find()
 
         # Prepare user list
-        user_list = "<b>List of Users:</b>\n"
+        user_list = "<b>📜 List of Users:</b>\n\n"
         for user in users_cursor:  # Use regular `for` loop
             user_id = user['user_id']
             try:
                 # Fetch user details using their user_id
                 user_info = await context.bot.get_chat(user_id)  # Fetch user details from Telegram
                 user_name = user_info.first_name  # Get the user's first name
-                user_list += f"<b>{user_name}</b> - <a href='tg://user?id={user_id}'>@{user_name}</a> ({user_id})\n"
+                
+                # Format each user's information
+                user_list += f"🔸 <a href='tg://user?id={user_id}'>{user_name}</a> || <code>{user_id}</code>\n"
             except Exception as e:
                 # Handle error if user details cannot be fetched
-                user_list += f"<b>User ID:</b> {user_id} (Could not fetch details - {str(e)})\n"
+                user_list += f"⚠️ <b>User ID:</b> <code>{user_id}</code> (Error: {str(e)})\n"
 
-        # Send the list of users
+        # Send the formatted list
         await query.edit_message_text(user_list, parse_mode="HTML")
 
     elif query.data == "exit":
@@ -60,4 +63,5 @@ async def handle_stats_buttons(update: Update, context: ContextTypes.DEFAULT_TYP
     elif query.data == "back":
         # Handle back button: Go back to the main stats view
         await stats(update, context)
+
 
