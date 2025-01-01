@@ -41,7 +41,11 @@ async def set_task(update: Update, context: CallbackContext) -> None:
         command_input = ' '.join(args)
 
         # Use regex to extract starttime-endtime, description, and reward
-        match = re.match(r"(\d{1,2}:\d{2}(?:am|pm)-\d{1,2}:\d{2}(?:am|pm))\s+(.+)\s+\((.+)\)", command_input, re.IGNORECASE)
+        match = re.match(
+            r"(\d{1,2}:\d{2}(?:am|pm)\s{1,2}-\s{1,2}\d{1,2}:\d{2}(?:am|pm))\s{1,2}(.+)\s{1,2}\((.+)\)", 
+            command_input, 
+            re.IGNORECASE
+        )
         if not match:
             raise ValueError("Invalid format. Use: /task starttime-endtime description (reward)")
 
