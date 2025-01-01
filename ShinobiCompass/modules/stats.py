@@ -14,7 +14,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_count = db.users.count_documents({})
 
     # Prepare the message with total users and groups
-    message_text = f"<b>Total Users: {user_count}</b>\n<b>Total Groups: {group_count}</b>"
+    message_text = f"<b>Total Users: {user_count}"
 
     # Create inline keyboard with buttons
     keyboard = [
