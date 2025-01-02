@@ -129,7 +129,7 @@ async def set_task(update: Update, context: CallbackContext) -> None:
             "created_at": now_ist,
             "verified_users": []
         }
-        task_collection().insert_one(task)
+        tasks_collection.insert_one(task)
 
         # Determine the task message based on start time
         message = await context.bot.send_message(
