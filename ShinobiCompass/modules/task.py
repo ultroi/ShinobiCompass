@@ -26,59 +26,61 @@ async def generate_task_id(chat_id: int) -> str:
     return str(uuid.uuid4().int)[:5]
 
 
-@require_verification
-async def set_task(update: Update, context: CallbackContext) -> None:
-    if not await is_admin(update, context):
-        await update.message.reply_text("Only admins can create tasks.")
+
+# Helper to parse time
+def parse_time(time_str):
+    try:
+        return datetime.strptime(time_str, "%I:%M%p").time()
+    except ValueError:
+        return None
+
+# Set the task
+async def set_task(update: Update, context: CallbackContext):
+    if update.effective_chat.type not in ["group", "supergroup"]:
+        await update.message.reply_text("This command can only be used in groups.")
+        return
+
+    user = update.effective_user
+    admins = [admin.user.id for admin in await context.bot.get_chat_administrators(update.effective_chat.id)]
+    if user.id not in admins:
+        await update.message.reply_text("Only admins can set tasks.")
+        return
+
+    # Parse command arguments
+    args = update.message.text.split(" ", 1)
+    if len(args) < 2:
+        await update.message.reply_text("Invalid format. Use /task starttime-endtime description (reward).")
         return
 
     try:
-        args = context.args
-        if len(args) < 2:
-            raise ValueError("Insufficient arguments")
+        task_info = args[1].strip()
+        time_range, description_and_reward = task_info.split(" ", 1)
+        start_time_str, end_time_str = time_range.split("-")
+        description, reward = description_and_reward.strip().rsplit("(", 1)
+        reward = reward.replace(")", "").strip()
 
-        # Combine all arguments into a single string for easier parsing
-        command_input = ' '.join(args)
+        start_time = parse_time(start_time_str)
+        end_time = parse_time(end_time_str)
 
-        # Use regex to extract starttime-endtime, description, and reward
-        match = re.match(
-            r"(\d{1,2}:\d{2}(?:am|pm)\s*-\s*\d{1,2}:\d{2}(?:am|pm))\s+(.+)\s+(.+)", 
-            command_input, 
-            re.IGNORECASE
-        )
-        if not match:
-            raise ValueError("Invalid format. Use: /task starttime-endtime description (reward)")
+        if not start_time or not end_time or not reward:
+            raise ValueError
+    except (IndexError, ValueError):
+        await update.message.reply_text("Invalid format. Use /task starttime-endtime description (reward).")
+        return
 
-        time_range, description, reward = match.groups()
+    now_ist = datetime.now(pytz.timezone("Asia/Kolkata"))
 
-        if '-' not in time_range:
-            raise ValueError("Invalid time range format. Use starttime-endtime format.")
-        start_time_str, end_time_str = time_range.split('-')
+    # Convert start_time and end_time to datetime objects on the same day
+    start_time = now_ist.replace(hour=start_time.hour, minute=start_time.minute, second=0, microsecond=0)
+    end_time = now_ist.replace(hour=end_time.hour, minute=end_time.minute, second=0, microsecond=0)
 
-        now_ist = datetime.now(IST)
-        current_date = now_ist.date()
-
-        # Parse start and end times with proper formatting
-        start_time = datetime.strptime(start_time_str.strip(), '%I:%M%p').time()
-        end_time = datetime.strptime(end_time_str.strip(), '%I:%M%p').time()
-
-        # Localize the start and end times
-        start_time = IST.localize(datetime.combine(current_date, start_time))
-        end_time = IST.localize(datetime.combine(current_date, end_time))
-
-        # Ensure times are in the future
-        if start_time <= now_ist:
-            await update.message.reply_text(f"Start time must be in the future. Current time: {now_ist.strftime('%I:%M %p')}")
-            return
-
-        if end_time <= now_ist:
-            await update.message.reply_text(f"End time must be in the future. Current time: {now_ist.strftime('%I:%M %p')}")
-            return
-
-        # Ensure end time is later than start time
-        if end_time <= start_time:
-            await update.message.reply_text("End time must be later than start time.")
-            return
+    # Validate times
+    if start_time <= now_ist:
+        await update.message.reply_text("Start time must be in the future.")
+        return
+    if end_time <= start_time:
+        await update.message.reply_text("End time must be after start time.")
+        return
         chat_id = update.effective_chat.id
 
         # Check if there is already an active task in the database for this chat
