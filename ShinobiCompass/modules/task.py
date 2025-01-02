@@ -42,7 +42,7 @@ async def set_task(update: Update, context: CallbackContext) -> None:
 
         # Use regex to extract starttime-endtime, description, and reward
         match = re.match(
-            r"(\d{1,2}:\d{2}(?:am|pm)\s{1,2}-\s{1,2}\d{1,2}:\d{2}(?:am|pm))\s{1,2}(.+)\s{1,2}\((.+)\)", 
+            r"(\d{1,2}:\d{2}(?:am|pm)\s*-\s*\d{1,2}:\d{2}(?:am|pm))\s+(.+)\s+(.+)", 
             command_input, 
             re.IGNORECASE
         )
@@ -58,31 +58,27 @@ async def set_task(update: Update, context: CallbackContext) -> None:
         now_ist = datetime.now(IST)
         current_date = now_ist.date()
 
-        # Parse and localize start and end times
-        start_time = IST.localize(datetime.combine(
-            current_date,
-            datetime.strptime(start_time_str, '%I:%M%p').time()
-        ))
-        end_time = IST.localize(datetime.combine(
-            current_date,
-            datetime.strptime(end_time_str, '%I:%M%p').time()
-        ))
+        # Parse start and end times with proper formatting
+        start_time = datetime.strptime(start_time_str.strip(), '%I:%M%p').time()
+        end_time = datetime.strptime(end_time_str.strip(), '%I:%M%p').time()
 
-        # Ensure times are on the current day
-        if start_time.date() != now_ist.date() or end_time.date() != now_ist.date():
-            await update.message.reply_text(f"Start time and end time must be on the current day. Current time: {now_ist.strftime('%I:%M %p')}")
-            return
+        # Localize the start and end times
+        start_time = IST.localize(datetime.combine(current_date, start_time))
+        end_time = IST.localize(datetime.combine(current_date, end_time))
 
         # Ensure times are in the future
-        if start_time <= now_ist or end_time <= now_ist:
-            await update.message.reply_text("Start time and end time must be in the future.")
+        if start_time <= now_ist:
+            await update.message.reply_text(f"Start time must be in the future. Current time: {now_ist.strftime('%I:%M %p')}")
+            return
+
+        if end_time <= now_ist:
+            await update.message.reply_text(f"End time must be in the future. Current time: {now_ist.strftime('%I:%M %p')}")
             return
 
         # Ensure end time is later than start time
         if end_time <= start_time:
             await update.message.reply_text("End time must be later than start time.")
             return
-
         chat_id = update.effective_chat.id
 
         # Check if there is already an active task in the database for this chat
