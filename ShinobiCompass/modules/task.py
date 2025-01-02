@@ -94,7 +94,7 @@ async def set_task(update: Update, context: CallbackContext) -> None:
         chat_id = update.effective_chat.id
 
         # Check if there is already an active task in the database for this chat
-        existing_task = task_collection().find_one({"chat_id": chat_id, "end_time": {"$gt": now_ist}})
+        existing_task = tasks_collection.find_one({"chat_id": chat_id, "end_time": {"$gt": now_ist}})
         if existing_task:
             await update.message.reply_text("A task is already active for today. Please wait until the current task ends before creating a new one.")
             return
@@ -146,7 +146,7 @@ async def set_task(update: Update, context: CallbackContext) -> None:
         )
 
         # Update the task with the message ID and pin it
-        task_collection().update_one({"task_id": task_id}, {"$set": {"message_id": message.message_id}})
+        tasks_collection.update_one({"task_id": task_id}, {"$set": {"message_id": message.message_id}})
         await context.bot.pin_chat_message(chat_id, message.message_id)
 
         # Schedule task to edit the message after the start time
