@@ -7,27 +7,28 @@ import asyncio
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
-
 async def luck(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
 
-    # Send initial "calculating" message
-    await update.message.reply_text(
-        "🎲 <b>Death Gambit</b>\n\n🌟 Calculating your luck...\n⏳ Please wait...",
+    # Send initial "Calculating your luck..." message
+    initial_message = await update.message.reply_text(
+        "🎲 <b>Death Gambit</b>\n\n⏳ Calculating your luck...",
         parse_mode=ParseMode.HTML
     )
 
-    # Add a delay to simulate "thinking"
+    # Simulate delay and update the message to "Revealing your number..."
     await asyncio.sleep(2)
+    await initial_message.edit_text(
+        "🎲 <b>Death Gambit</b>\n\n🔍 Revealing your number...",
+        parse_mode=ParseMode.HTML
+    )
 
-    # Generate a random lucky number
+    # Simulate another delay and reveal the lucky number
+    await asyncio.sleep(2)
     random_number = random.randint(1, 9)
-
-    # Send the final result message
-    await update.message.reply_text(
-        f"🪄 And your lucky number is...\n"
-        f"<b>{random_number}</b>! 🎉\n\n"
-        f"Try this number in the Death Gambit and see where fate takes you!",
+    await initial_message.edit_text(
+        f"🎲 <b>Death Gambit</b>\n\n🪄 Your lucky number is: <b>{random_number}</b>! 🎉\n"
+        f"<i>Try this number in the Death Gambit and see where fate takes you!</i>",
         parse_mode=ParseMode.HTML
     )
 
