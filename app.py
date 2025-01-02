@@ -25,7 +25,7 @@ from ShinobiCompass.modules.task import (
 )
 # from ShinobiCompass.modules.pawn import ( )
 
-from ShinobiCompass.modules.extra import xp_command, iseal_command, calc
+from ShinobiCompass.modules.extra import xp_command, iseal_command, calc, luck
 from ShinobiCompass.modules.flood import floods, set_constants
 from ShinobiCompass.modules.verify import verify_user, auth, unauth, info
 from ShinobiCompass.modules.call import reply
@@ -96,6 +96,8 @@ application.add_handler(CommandHandler("info", info))
 
 
 application.add_handler(CommandHandler("cal", calc))
+
+application.add_handler(CommandHandler("luck", luck))
 
 
 application.add_handler(CommandHandler("call", reply))
