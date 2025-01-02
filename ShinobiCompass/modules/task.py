@@ -135,12 +135,12 @@ async def set_task(update: Update, context: CallbackContext) -> None:
         message = await context.bot.send_message(
             chat_id=chat_id,
             text=(
-                f"<b><u>\ud83d\udcdd Today's Task</u></b>\n"
+                f"<b><u> Today's Task </u></b>\n\n"
                 f"<b>Task ID:</b> <code>{task_id}</code>\n\n"
                 f"<b>Task Time:</b> <i>{start_time_str} - {end_time_str}</i>\n\n"
                 f"<b>Description:</b> <i>{description}</i>\n"
                 f"<b>Reward:</b> <i>{reward_value} {reward_type.lower()}</i>\n\n"
-                f"\u23f3 The task will begin shortly. Get ready!"
+                f"<b> The task will begin shortly. Get ready!</b>"
             ),
             parse_mode=telegram.constants.ParseMode.HTML
         )
