@@ -35,48 +35,60 @@ def parse_time(time_str):
         return None
 
 # Set the task
-async def set_task(update: Update, context: CallbackContext):
+async def set_task(update: Update, context: CallbackContext) -> None:
     if update.effective_chat.type not in ["group", "supergroup"]:
         await update.message.reply_text("This command can only be used in groups.")
         return
-
-    user = update.effective_user
-    admins = [admin.user.id for admin in await context.bot.get_chat_administrators(update.effective_chat.id)]
-    if user.id not in admins:
-        await update.message.reply_text("Only admins can set tasks.")
-        return
-
-    # Parse command arguments
-    args = update.message.text.split(" ", 1)
-    if len(args) < 2:
-        await update.message.reply_text("Invalid format. Use /task starttime-endtime description (reward).")
+        
+    if not await is_admin(update, context):
+        await update.message.reply_text("Only admins can create tasks.")
         return
 
     try:
-        task_info = args[1].strip()
-        time_range, description_and_reward = task_info.split(" ", 1)
-        start_time_str, end_time_str = time_range.split("-")
-        description, reward = description_and_reward.strip().rsplit("(", 1)
-        reward = reward.replace(")", "").strip()
+        args = context.args
+        if len(args) < 2:
+            raise ValueError("Insufficient arguments")
 
-        start_time = parse_time(start_time_str)
-        end_time = parse_time(end_time_str)
+        # Combine all arguments into a single string for easier parsing
+        command_input = ' '.join(args)
 
-        if not start_time or not end_time or not reward:
-            raise ValueError
+        # Use regex to extract starttime-endtime, description, and reward
+        match = re.match(r"(\d{1,2}:\d{2}(?:am|pm)-\d{1,2}:\d{2}(?:am|pm))\s+(.+)\s+\((.+)\)", command_input, re.IGNORECASE)
+        if not match:
+            raise ValueError("Invalid format. Use: /task starttime-endtime description (reward)")
 
-        now_ist = datetime.now(pytz.timezone("Asia/Kolkata"))
+        time_range, description, reward = match.groups()
 
-        # Convert start_time and end_time to datetime objects on the same day
-        start_time = now_ist.replace(hour=start_time.hour, minute=start_time.minute, second=0, microsecond=0)
-        end_time = now_ist.replace(hour=end_time.hour, minute=end_time.minute, second=0, microsecond=0)
+        if '-' not in time_range:
+            raise ValueError("Invalid time range format. Use starttime-endtime format.")
+        start_time_str, end_time_str = time_range.split('-')
 
-        # Validate times
-        if start_time <= now_ist:
-            await update.message.reply_text("Start time must be in the future.")
+        now_ist = datetime.now(IST)
+        current_date = now_ist.date()
+
+        # Parse and localize start and end times
+        start_time = IST.localize(datetime.combine(
+            current_date,
+            datetime.strptime(start_time_str, '%I:%M%p').time()
+        ))
+        end_time = IST.localize(datetime.combine(
+            current_date,
+            datetime.strptime(end_time_str, '%I:%M%p').time()
+        ))
+
+        # Ensure times are on the current day
+        if start_time.date() != now_ist.date() or end_time.date() != now_ist.date():
+            await update.message.reply_text(f"Start time and end time must be on the current day. Current time: {now_ist.strftime('%I:%M %p')}")
             return
+
+        # Ensure times are in the future
+        if start_time <= now_ist or end_time <= now_ist:
+            await update.message.reply_text("Start time and end time must be in the future.")
+            return
+
+        # Ensure end time is later than start time
         if end_time <= start_time:
-            await update.message.reply_text("End time must be after start time.")
+            await update.message.reply_text("End time must be later than start time.")
             return
 
         chat_id = update.effective_chat.id
