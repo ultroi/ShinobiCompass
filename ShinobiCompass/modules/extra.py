@@ -27,7 +27,7 @@ async def luck(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await asyncio.sleep(2)
     random_number = random.randint(1, 9)
     await initial_message.edit_text(
-        f"🎲 <b>Death Gambit</b>\n\n🪄 Your lucky number is: <b>{random_number}</b>! 🎉\n"
+        f"🎲 <b>Death Gambit</b>\n\n🪄 Your lucky number is: <b>{random_number}</b>! 🎉\n\n"
         f"<i>Try this number in the Death Gambit and see where fate takes you!</i>",
         parse_mode=ParseMode.HTML
     )
