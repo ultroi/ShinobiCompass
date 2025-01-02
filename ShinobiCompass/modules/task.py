@@ -64,87 +64,85 @@ async def set_task(update: Update, context: CallbackContext):
 
         if not start_time or not end_time or not reward:
             raise ValueError
-    except (IndexError, ValueError):
-        await update.message.reply_text("Invalid format. Use /task starttime-endtime description (reward).")
-        return
 
-    now_ist = datetime.now(pytz.timezone("Asia/Kolkata"))
+        now_ist = datetime.now(pytz.timezone("Asia/Kolkata"))
 
-    # Convert start_time and end_time to datetime objects on the same day
-    start_time = now_ist.replace(hour=start_time.hour, minute=start_time.minute, second=0, microsecond=0)
-    end_time = now_ist.replace(hour=end_time.hour, minute=end_time.minute, second=0, microsecond=0)
+        # Convert start_time and end_time to datetime objects on the same day
+        start_time = now_ist.replace(hour=start_time.hour, minute=start_time.minute, second=0, microsecond=0)
+        end_time = now_ist.replace(hour=end_time.hour, minute=end_time.minute, second=0, microsecond=0)
 
-    # Validate times
-    if start_time <= now_ist:
-        await update.message.reply_text("Start time must be in the future.")
-        return
-    if end_time <= start_time:
-        await update.message.reply_text("End time must be after start time.")
-        return
+        # Validate times
+        if start_time <= now_ist:
+            await update.message.reply_text("Start time must be in the future.")
+            return
+        if end_time <= start_time:
+            await update.message.reply_text("End time must be after start time.")
+            return
 
-    chat_id = update.effective_chat.id
+        chat_id = update.effective_chat.id
 
-    # Check if there is already an active task in the database for this chat
-    existing_task = task_collection().find_one({"chat_id": chat_id, "end_time": {"$gt": now_ist}})
-    if existing_task:
-        await update.message.reply_text("A task is already active for today. Please wait until the current task ends before creating a new one.")
-        return
+        # Check if there is already an active task in the database for this chat
+        existing_task = task_collection().find_one({"chat_id": chat_id, "end_time": {"$gt": now_ist}})
+        if existing_task:
+            await update.message.reply_text("A task is already active for today. Please wait until the current task ends before creating a new one.")
+            return
 
-    # Unpin the previous task if any
-    if existing_task:
-        try:
-            await context.bot.unpin_chat_message(chat_id, existing_task['message_id'])
-        except telegram.error.BadRequest as e:
-            print(f"Error while unpinning: {e}")
+        # Unpin the previous task if any
+        if existing_task:
+            try:
+                await context.bot.unpin_chat_message(chat_id, existing_task['message_id'])
+            except telegram.error.BadRequest as e:
+                print(f"Error while unpinning: {e}")
 
-    # Ensure the reward is in a valid format (either gems, tokens, or coins/glory)
-    reward_match = re.match(r"(\d+)\s*(gems|tokens|coins\/glory)", reward, re.IGNORECASE)
-    if not reward_match:
-        raise ValueError("Invalid reward format. Use ('2 gems', '3 tokens', '100 coins/glory')")
+        # Ensure the reward is in a valid format (either gems, tokens, or coins/glory)
+        reward_match = re.match(r"(\d+)\s*(gems|tokens|coins\/glory)", reward, re.IGNORECASE)
+        if not reward_match:
+            await update.message.reply_text("Invalid reward format. Use ('2 gems', '3 tokens', '100 coins/glory')")
+            return
 
-    reward_value, reward_type = reward_match.groups()
+        reward_value, reward_type = reward_match.groups()
 
-    # Generate a unique task ID
-    task_id = await generate_task_id(chat_id)
+        # Generate a unique task ID
+        task_id = await generate_task_id(chat_id)
 
-    # Save task to the database
-    task = {
-        "task_id": task_id,
-        "chat_id": chat_id,
-        "start_time": start_time,
-        "end_time": end_time,
-        "description": description,
-        "reward_value": int(reward_value),
-        "reward_type": reward_type.lower(),
-        "created_at": now_ist,
-        "verified_users": []
-    }
-    task_collection().insert_one(task)
+        # Save task to the database
+        task = {
+            "task_id": task_id,
+            "chat_id": chat_id,
+            "start_time": start_time,
+            "end_time": end_time,
+            "description": description,
+            "reward_value": int(reward_value),
+            "reward_type": reward_type.lower(),
+            "created_at": now_ist,
+            "verified_users": []
+        }
+        task_collection().insert_one(task)
 
-    # Determine the task message based on start time
-    message = await context.bot.send_message(
-        chat_id=chat_id,
-        text=(
-            f"<b><u>📝 Today's Task</u></b>\n"
-            f"<b>Task ID:</b> <code>{task_id}</code>\n\n"
-            f"<b>Task Time:</b> <i>{start_time_str} - {end_time_str}</i>\n\n"
-            f"<b>Description:</b> <i>{description}</i>\n"
-            f"<b>Reward:</b> <i>{reward_value} {reward_type.lower()}</i>\n\n"
-            f"⏳ The task will begin shortly. Get ready!"
-        ),
-        parse_mode=telegram.constants.ParseMode.HTML
-    )
+        # Determine the task message based on start time
+        message = await context.bot.send_message(
+            chat_id=chat_id,
+            text=(
+                f"<b><u>\ud83d\udcdd Today's Task</u></b>\n"
+                f"<b>Task ID:</b> <code>{task_id}</code>\n\n"
+                f"<b>Task Time:</b> <i>{start_time_str} - {end_time_str}</i>\n\n"
+                f"<b>Description:</b> <i>{description}</i>\n"
+                f"<b>Reward:</b> <i>{reward_value} {reward_type.lower()}</i>\n\n"
+                f"\u23f3 The task will begin shortly. Get ready!"
+            ),
+            parse_mode=telegram.constants.ParseMode.HTML
+        )
 
-    # Update the task with the message ID and pin it
-    task_collection().update_one({"task_id": task_id}, {"$set": {"message_id": message.message_id}})
-    await context.bot.pin_chat_message(chat_id, message.message_id)
+        # Update the task with the message ID and pin it
+        task_collection().update_one({"task_id": task_id}, {"$set": {"message_id": message.message_id}})
+        await context.bot.pin_chat_message(chat_id, message.message_id)
 
-    # Schedule task to edit the message after the start time
-    delay = (start_time - now_ist).total_seconds()
-    asyncio.create_task(task_message(context, chat_id, message.message_id, task_id, start_time_str, end_time_str, description, reward_value, reward_type.lower(), delay))
+        # Schedule task to edit the message after the start time
+        delay = (start_time - now_ist).total_seconds()
+        asyncio.create_task(task_message(context, chat_id, message.message_id, task_id, start_time_str, end_time_str, description, reward_value, reward_type.lower(), delay))
 
-    # Schedule task to delete task data and unpin message after 12 hours
-    asyncio.create_task(delete_task_data(context, task, chat_id))
+        # Schedule task to delete task data and unpin message after 12 hours
+        asyncio.create_task(delete_task_data(context, task, chat_id))
 
     except (IndexError, ValueError) as e:
         print(f"Error: {e}")
@@ -152,6 +150,11 @@ async def set_task(update: Update, context: CallbackContext):
             "Usage: /task starttime-endtime description (reward)\n"
             "Example: /task 9:40pm-10:00pm Do 100 glory (19 coins/glory)"
         )
+
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        await update.message.reply_text("An unexpected error occurred. Please try again later.")
+
 
 
 async def task_message(context: CallbackContext, chat_id: int, message_id: int, task_id: int, start_time_str: str, end_time_str: str, description: str, reward_value: int, reward_type: str, delay: float):
