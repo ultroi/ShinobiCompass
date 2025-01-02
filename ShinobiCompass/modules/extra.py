@@ -4,6 +4,7 @@ import re
 from ShinobiCompass.modules.verify import require_verification
 import random
 import asyncio
+from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
 
