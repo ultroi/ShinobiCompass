@@ -2,6 +2,34 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
 import re
 from ShinobiCompass.modules.verify import require_verification
+import random
+import asyncio
+from telegram.constants import ParseMode
+
+
+async def luck(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.message.from_user.id
+
+    # Send initial "calculating" message
+    await update.message.reply_text(
+        "🎲 <b>Death Gambit</b>\n\n🌟 Calculating your luck...\n⏳ Please wait...",
+        parse_mode=ParseMode.HTML
+    )
+
+    # Add a delay to simulate "thinking"
+    await asyncio.sleep(2)
+
+    # Generate a random lucky number
+    random_number = random.randint(1, 9)
+
+    # Send the final result message
+    await update.message.reply_text(
+        f"🪄 And your lucky number is...\n"
+        f"<b>{random_number}</b>! 🎉\n\n"
+        f"Try this number in the Death Gambit and see where fate takes you!",
+        parse_mode=ParseMode.HTML
+    )
+
 
 async def calculate_xp_info(inventory_text):
     try:
