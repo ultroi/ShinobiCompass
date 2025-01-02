@@ -127,7 +127,8 @@ async def set_task(update: Update, context: CallbackContext) -> None:
             "reward_value": int(reward_value),
             "reward_type": reward_type.lower(),
             "created_at": now_ist,
-            "verified_users": []
+            "verified_users": [],
+            "message_id": message.message_id,
         }
         tasks_collection.insert_one(task)
 
